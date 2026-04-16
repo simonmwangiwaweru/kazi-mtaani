@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazi Mtaani – Post a New Job</title>
+    <meta name="description" content="Post a new job listing on Kazi Mtaani and find reliable local talent fast.">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { background: var(--off-white); }
+
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navbar */
+        .page-nav {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 32px; height: 64px; display: flex; align-items: center;
+            justify-content: space-between; box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 50;
+        }
+        .page-nav .logo { font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:800;
+            color:var(--green); text-decoration:none; }
+        .page-nav .logo span { color:var(--text-primary); }
+
+        /* Grid layout */
+        .post-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 28px;
+            max-width: 1040px;
+            margin: 40px auto;
+            padding: 0 24px 60px;
+            width: 100%;
+            align-items: start;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: var(--radius-xl); padding: 36px; box-shadow: var(--shadow-sm);
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+        .form-card h1 { font-size: 1.7rem; color: var(--text-primary); margin-bottom: 6px; }
+        .form-card .subtitle { color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 32px; }
+
+        .form-section { margin-bottom: 28px; }
+        .form-section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--green); margin-bottom: 16px;
+            padding-bottom: 10px; border-bottom: 1px solid var(--green-mid); }
+
+        .form-group { margin-bottom: 20px; }
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        label { color: var(--text-primary); font-weight: 600; font-size: 0.875rem; margin-bottom: 7px; }
+        label .optional { color: var(--text-light); font-weight: 400; font-size: 0.78rem; margin-left: 4px; }
+
+        .char-hint { font-size: 0.78rem; color: var(--text-light); margin-top: 6px; }
+
+        textarea.glass-input { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+        .input-prefix-wrap { position: relative; }
+        .input-prefix { position: absolute; left: 0; top: 0; bottom: 0; width: 46px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--off-white); border: 1.5px solid var(--border);
+            border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md);
+            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+        .input-prefix-wrap input { padding-left: 54px; }
+
+        .submit-btn { width: 100%; padding: 16px; font-size: 1.05rem; border-radius: var(--radius-md);
+            margin-top: 8px; }
+
+        .disclaimer { text-align: center; font-size: 0.8rem; color: var(--text-light);
+            margin-top: 16px; line-height: 1.6; }
+        .disclaimer a { color: var(--green); text-decoration: none; }
+        .disclaimer a:hover { text-decoration: underline; }
+
+        /* Sidebar Tips */
+        .tips-card {
+            background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-xl);
+            padding: 28px; box-shadow: var(--shadow-sm); position: sticky; top: 84px;
+        }
+        .tips-card h3 { font-size: 1rem; color: var(--text-primary); margin-bottom: 18px; }
+        .tip-item { display: flex; gap: 14px; margin-bottom: 20px; }
+        .tip-icon { width: 40px; height: 40px; border-radius: var(--radius-md);
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; }
+        .tip-icon.green  { background: var(--green-light); }
+        .tip-icon.blue   { background: #e8f0fe; }
+        .tip-icon.yellow { background: #fff8e1; }
+        .tip-icon.purple { background: #f0e8fe; }
+        .tip-text strong { font-size: 0.88rem; display: block; color: var(--text-primary); margin-bottom: 3px; }
+        .tip-text p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+
+        .escrow-note {
+            background: var(--green-light); border: 1px solid var(--green-mid);
+            border-radius: var(--radius-md); padding: 16px; margin-top: 24px;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .escrow-note .note-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .escrow-note p { font-size: 0.83rem; color: var(--green-dark); line-height: 1.6; margin: 0; }
+        .escrow-note strong { display: block; margin-bottom: 4px; }
+
+        @media (max-width: 768px) {
+            .post-layout { grid-template-columns: 1fr; }
+            .form-grid-2 { grid-template-columns: 1fr; }
+            .tips-card { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <!-- Navbar -->
+    <nav class="page-nav">
+        <a href="index.html" class="logo">Kazi<span>Mtaani</span></a>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <a href="dashboard.html" class="btn-ghost" style="text-decoration:none; font-size:0.9rem;">← Back to Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="post-layout">
+
+        <!-- FORM -->
+        <div class="form-card">
+            <h1>Post a New Job</h1>
+            <p class="subtitle">Fill in the details below and start receiving applications within minutes.</p>
+
+            <form id="jobForm">
+                <!-- Job Details -->
+                <div class="form-section">
+                    <div class="form-section-title">📋 Job Details</div>
+
+                    <div class="form-group">
+                        <label for="title">Job Title</label>
+                        <input type="text" id="title" class="glass-input" placeholder="e.g. Professional House Cleaning in Westlands" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Job Description</label>
+                        <textarea id="description" class="glass-input" rows="4" placeholder="Describe the tasks, tools needed, timing, any special requirements…"></textarea>
+                        <p class="char-hint">Be specific — detailed descriptions get more qualified applicants.</p>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" class="glass-input">
+                                <option value="general">General 📝</option>
+                                <option value="manual">Manual Labor 🧹</option>
+                                <option value="transport">Transport 🏍️</option>
+                                <option value="technical">Technical 🛠️</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" class="glass-input" placeholder="e.g. Westlands, Nairobi" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills & Duration -->
+                <div class="form-section">
+                    <div class="form-section-title">🎯 Skills &amp; Duration</div>
+
+                    <div class="form-group">
+                        <label for="skillInput">Required Skills <span class="optional">(optional)</span></label>
+                        <div class="tag-input-wrap glass-input" id="tagWrap" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:44px;padding:6px 12px;cursor:text;" onclick="document.getElementById('skillInput').focus()">
+                            <input type="text" id="skillInput" placeholder="Type a skill and press Enter…"
+                                style="border:none;outline:none;background:transparent;font-size:0.88rem;flex:1;min-width:120px;padding:4px 0;">
+                        </div>
+                        <p class="char-hint">e.g. Plumbing, Welding, Driving — up to 10 skills.</p>
+                        <input type="hidden" id="requiredSkillsJson" name="requiredSkills">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duration">Estimated Duration <span class="optional">(optional)</span></label>
+                        <select id="duration" class="glass-input">
+                            <option value="">— Select duration —</option>
+                            <option value="Less than 1 day">Less than 1 day</option>
+                            <option value="1 day">1 day</option>
+                            <option value="2–3 days">2–3 days</option>
+                            <option value="1 week">1 week</option>
+                            <option value="2 weeks">2 weeks</option>
+                            <option value="1 month">1 month</option>
+                            <option value="Ongoing">Ongoing</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div class="form-section">
+                    <div class="form-section-title">💳 Payment &amp; Escrow</div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="pay">Pay Amount (KES)</label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix">KES</span>
+                                <input type="number" id="pay" class="glass-input" placeholder="e.g. 1500" min="50" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="employerPhone">M-Pesa Number <span class="optional">(for Escrow)</span></label>
+                            <input type="tel" id="employerPhone" class="glass-input" placeholder="e.g. 0712 345 678" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary submit-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Publish Job Listing
+                </button>
+
+                <p class="disclaimer">
+                    By posting a job you agree to our <a href="#">Terms of Service</a> and <a href="#">Escrow Policy</a>.
+                </p>
+            </form>
+        </div>
+
+        <!-- TIPS SIDEBAR -->
+        <div>
+            <div class="tips-card">
+                <h3>💡 Tips for Getting Hired Faster</h3>
+
+                <div class="tip-item">
+                    <div class="tip-icon green">📝</div>
+                    <div class="tip-text">
+                        <strong>Write a Clear Title</strong>
+                        <p>Include the service type and location — e.g. "Plumber needed in Kilimani".</p>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon blue">💰</div>
+                    <div class="tip-text">
+                        <strong>Set a Fair Price</strong>
+                        <p>Competitive pay attracts experienced workers faster.</p>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon yellow">⏱️</div>
+                    <div class="tip-text">
+                        <strong>Mention Timing</strong>
+                        <p>Tell workers if the job is urgent, one-time, or recurring.</p>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon purple">📱</div>
+                    <div class="tip-text">
+                        <strong>Stay Responsive</strong>
+                        <p>Reply quickly to your WhatsApp messages from interested workers.</p>
+                    </div>
+                </div>
+
+                <div class="escrow-note">
+                    <span class="note-icon">🛡️</span>
+                    <p>
+                        <strong>Escrow Protects Everyone</strong>
+                        Your payment is held safely and only released to the worker when you confirm the job is done.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="pj-toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column-reverse;gap:10px;max-width:360px;pointer-events:none;"></div>
+
+<script>
+    function showPjToast(type, title, msg) {
+        const icons = {
+            success: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+            error:   `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+            warning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+        };
+        const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b' };
+        const bgs    = { success: '#e8f5e9', error: '#fdecea', warning: '#fff8e1' };
+        const c = document.getElementById('pj-toast-container');
+        const t = document.createElement('div');
+        t.style.cssText = `display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${colors[type]};box-shadow:0 10px 40px rgba(0,0,0,0.12);pointer-events:auto;animation:pjToastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;max-width:360px;`;
+        t.innerHTML = `
+            <div style="width:32px;height:32px;border-radius:50%;background:${bgs[type]};color:${colors[type]};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icons[type]||icons.warning}</div>
+            <div style="flex:1;"><div style="font-weight:700;font-size:0.88rem;color:#111827;margin-bottom:2px;">${title}</div>${msg?`<div style="font-size:0.8rem;color:#6b7280;">${msg}</div>`:''}</div>`;
+        const style = document.createElement('style');
+        style.textContent = '@keyframes pjToastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}';
+        if (!document.querySelector('style[data-pj-toast]')) { style.setAttribute('data-pj-toast','1'); document.head.appendChild(style); }
+        c.appendChild(t);
+        setTimeout(() => { t.style.transition = 'opacity 0.25s,transform 0.25s'; t.style.opacity='0'; t.style.transform='translateX(40px)'; setTimeout(()=>t.remove(),260); }, type==='error'?6000:3500);
+    }
+
+    // Verify session
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('userName');
+    if (!userId || !userName) {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    // ── Tag input for Required Skills ────────────────────────────────────────
+    const tagWrap  = document.getElementById('tagWrap');
+    const skillInp = document.getElementById('skillInput');
+    const hiddenSkills = document.getElementById('requiredSkillsJson');
+    let skills = [];
+
+    function renderTags() {
+        // Remove all existing chips (leave the input itself)
+        tagWrap.querySelectorAll('.skill-chip').forEach(el => el.remove());
+        skills.forEach((skill, i) => {
+            const chip = document.createElement('span');
+            chip.className = 'skill-chip';
+            chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:var(--green-light);color:var(--green-dark);font-size:0.82rem;font-weight:600;';
+            chip.innerHTML = `${escapeHtml(skill)}<button type="button" data-i="${i}" style="background:none;border:none;cursor:pointer;color:var(--green-dark);font-size:1rem;line-height:1;padding:0 0 1px 2px;" aria-label="Remove ${escapeHtml(skill)}">×</button>`;
+            chip.querySelector('button').addEventListener('click', () => {
+                skills.splice(i, 1);
+                renderTags();
+            });
+            tagWrap.insertBefore(chip, skillInp);
+        });
+        hiddenSkills.value = JSON.stringify(skills);
+        skillInp.placeholder = skills.length ? '' : 'Type a skill and press Enter…';
+    }
+
+    function addSkill(raw) {
+        const val = raw.trim().replace(/<[^>]*>/g, '').slice(0, 60);
+        if (!val || skills.length >= 10 || skills.map(s=>s.toLowerCase()).includes(val.toLowerCase())) return;
+        skills.push(val);
+        renderTags();
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    skillInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addSkill(skillInp.value);
+            skillInp.value = '';
+        } else if (e.key === 'Backspace' && skillInp.value === '' && skills.length) {
+            skills.pop();
+            renderTags();
+        }
+    });
+    skillInp.addEventListener('blur', () => {
+        if (skillInp.value.trim()) {
+            addSkill(skillInp.value);
+            skillInp.value = '';
+        }
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
+    document.getElementById('jobForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+
+        // Flush any partially-typed skill
+        if (skillInp.value.trim()) {
+            addSkill(skillInp.value);
+            skillInp.value = '';
+        }
+
+        const jobData = {
+            title:          document.getElementById('title').value,
+            location:       document.getElementById('location').value,
+            pay:            document.getElementById('pay').value,
+            category:       document.getElementById('category').value,
+            description:    document.getElementById('description').value,
+            employerPhone:  document.getElementById('employerPhone').value.replace(/^0/, '254').replace(/\s+/g, ''),
+            requiredSkills: JSON.parse(hiddenSkills.value || '[]'),
+            duration:       document.getElementById('duration').value
+        };
+
+        btn.disabled    = true;
+        btn.textContent = 'Publishing…';
+
+        try {
+            const res = await fetch('/api/jobs', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' },
+                body:        JSON.stringify(jobData)
+            });
+
+            if (res.ok) {
+                showPjToast('success', 'Job Published!', 'Redirecting to your dashboard…');
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
+            } else if (res.status === 401) {
+                showPjToast('error', 'Session Expired', 'Redirecting to login…');
+                localStorage.clear();
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            } else {
+                const data = await res.json();
+                showPjToast('error', 'Post Failed', data.msg || 'Failed to post job. Please try again.');
+                btn.disabled    = false;
+                btn.textContent = 'Publish Job Listing';
+            }
+        } catch {
+            showPjToast('warning', 'Connection Error', 'Is the server running?');
+            btn.disabled    = false;
+            btn.textContent = 'Publish Job Listing';
+        }
+    });
+</script>
+</body>
+</html>

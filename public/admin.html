@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazi Mtaani – Admin Panel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { background: var(--off-white); }
+        .app-layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px; background: #1a1a2e; border-right: 1px solid #2d2d44;
+            display: flex; flex-direction: column; position: fixed;
+            height: 100vh; top: 0; left: 0; z-index: 200;
+        }
+        .sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid #2d2d44; }
+        .sidebar-logo { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800;
+            color: #ff6b6b; text-decoration: none; display: block; }
+        .sidebar-logo span { color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: 500;
+            display: block; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+        .sidebar-nav { padding: 12px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            border-radius: 8px; color: rgba(255,255,255,0.6); text-decoration: none;
+            font-size: 0.88rem; font-weight: 500; margin-bottom: 2px;
+            cursor: pointer; border: none; background: none; width: 100%;
+            transition: all 0.15s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+        .nav-item.active { background: rgba(255,107,107,0.18); color: #ff6b6b; font-weight: 700; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid #2d2d44; }
+        .admin-chip { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: rgba(255,255,255,0.06); border-radius: 8px; margin-bottom: 10px; }
+        .admin-avatar { width: 32px; height: 32px; background: #ff6b6b; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white;
+            font-weight: 800; font-size: 0.9rem; font-family: 'Outfit', sans-serif; flex-shrink: 0; }
+        .admin-name { font-size: 0.85rem; font-weight: 600; color: white; }
+        .admin-role { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; }
+
+        /* Main */
+        .main-content { flex: 1; margin-left: 220px; min-height: 100vh; }
+        .topbar {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 32px; height: 64px; display: flex; align-items: center;
+            justify-content: space-between; position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        .topbar-title { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
+        .page-content { padding: 32px; }
+
+        /* Stats row */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 18px; margin-bottom: 32px; }
+        .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: 22px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-sm); }
+        .stat-icon { width: 48px; height: 48px; border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+        .stat-val { font-size: 1.55rem; font-weight: 800; font-family: 'Outfit', sans-serif;
+            color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
+        .stat-lbl { font-size: 0.76rem; color: var(--text-secondary); font-weight: 500; }
+
+        /* Tab bar */
+        .tab-bar { display: flex; gap: 4px; background: var(--off-white); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 4px; margin-bottom: 24px; width: fit-content; }
+        .tab-btn { padding: 9px 24px; border-radius: var(--radius-sm); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; background: none;
+            color: var(--text-secondary); transition: var(--transition); }
+        .tab-btn.active { background: var(--white); color: #ff6b6b; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); }
+
+        /* Section card */
+        .section-card { background: var(--white); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .section-header {
+            padding: 16px 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        .section-title { font-size: 1rem; font-weight: 700; color: var(--text-primary);
+            font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 10px; }
+        .count-badge { background: #fdecea; border: 1px solid #f9bbb4; color: #c62828;
+            border-radius: 20px; padding: 2px 10px; font-size: 0.76rem; font-weight: 700; }
+
+        /* Search */
+        .search-wrap { position: relative; }
+        .search-wrap input { padding-left: 36px; min-width: 220px; }
+        .search-wrap .si { position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-light); font-size: 0.9rem; }
+
+        /* Table */
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th {
+            text-align: left; padding: 10px 18px; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light);
+            background: var(--off-white); border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .admin-table td { padding: 13px 18px; border-bottom: 1px solid var(--border);
+            font-size: 0.87rem; color: var(--text-secondary); vertical-align: middle; }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .admin-table tr:hover td { background: var(--off-white); }
+        .cell-primary { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; }
+        .cell-mono { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); }
+
+        /* Role badges */
+        .role-pill { display: inline-flex; align-items: center; padding: 3px 10px;
+            border-radius: 20px; font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
+        .role-worker   { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+        .role-employer { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+        .role-admin    { background: #fdecea; color: #b71c1c; border: 1px solid #f9bbb4; }
+
+        /* Status badges */
+        .status-pill { display: inline-flex; align-items: center; padding: 3px 10px;
+            border-radius: 20px; font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
+        .sp-open     { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+        .sp-progress { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+        .sp-done     { background: var(--off-white); color: var(--text-secondary); border: 1px solid var(--border); }
+        .sp-escrow   { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+
+        /* Delete button */
+        .btn-del { background: #fdecea; color: #c62828; border: 1.5px solid #f9bbb4;
+            border-radius: var(--radius-sm); padding: 5px 12px; font-size: 0.78rem;
+            font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .btn-del:hover { background: #f9bbb4; }
+
+        /* Empty / loading states */
+        .table-state { padding: 60px 24px; text-align: center; color: var(--text-light); }
+        .table-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+        /* ── Admin Toast ── */
+        #adm-toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column-reverse; gap:10px; max-width:360px; pointer-events:none; }
+        .adm-toast { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-radius:12px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 10px 36px rgba(0,0,0,0.14); pointer-events:auto; animation:admToastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes admToastIn { from{opacity:0;transform:translateX(48px) scale(0.94)} to{opacity:1;transform:translateX(0) scale(1)} }
+        .adm-toast.adm-hiding { opacity:0; transform:translateX(48px) scale(0.94); transition:opacity 0.25s,transform 0.25s; }
+        .adm-toast.t-success { border-left:4px solid #22c55e; }
+        .adm-toast.t-error   { border-left:4px solid #ef4444; }
+        .adm-toast-body .adm-toast-title { font-weight:700; font-size:0.87rem; color:#111827; margin-bottom:2px; }
+        .adm-toast-body .adm-toast-msg   { font-size:0.81rem; color:#6b7280; line-height:1.45; }
+        .adm-toast-close { background:none; border:none; cursor:pointer; color:#9ca3af; font-size:1rem; padding:0; line-height:1; flex-shrink:0; margin-left:auto; }
+
+        /* ── Admin Confirm ── */
+        #admConfirmOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.48); backdrop-filter:blur(5px); z-index:8000; display:none; align-items:center; justify-content:center; padding:20px; }
+        #admConfirmOverlay.open { display:flex; }
+        .adm-confirm-box { background:#fff; border-radius:18px; padding:32px 28px; width:100%; max-width:380px; box-shadow:0 24px 64px rgba(0,0,0,0.22); animation:admPopIn 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes admPopIn { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
+        .adm-confirm-icon { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; background:#fdecea; }
+        .adm-confirm-title { font-size:1.05rem; font-weight:800; font-family:'Outfit',sans-serif; color:#111827; text-align:center; margin-bottom:8px; }
+        .adm-confirm-msg   { font-size:0.87rem; color:#6b7280; text-align:center; line-height:1.55; margin-bottom:24px; }
+        .adm-confirm-actions { display:flex; gap:10px; }
+        .adm-confirm-cancel { flex:1; padding:11px; border:1.5px solid #e5e7eb; border-radius:10px; background:#fff; font-size:0.9rem; font-weight:600; color:#374151; cursor:pointer; }
+        .adm-confirm-ok     { flex:1; padding:11px; border:none; border-radius:10px; background:#ef4444; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:'Outfit',sans-serif; }
+        .adm-confirm-ok:hover { opacity:0.88; }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; }
+            .page-content { padding: 20px 16px; }
+            .topbar { padding: 0 16px; }
+            .admin-table th:nth-child(n+4),
+            .admin-table td:nth-child(n+4) { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="sidebar-logo">
+                KaziMtaani
+                <span>Admin Panel</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" onclick="switchView('dashboard')">
+                <span>📊</span> Overview
+            </button>
+            <button class="nav-item" onclick="switchView('users')">
+                <span>👥</span> Users
+            </button>
+            <button class="nav-item" onclick="switchView('jobs')">
+                <span>💼</span> Jobs
+            </button>
+            <button class="nav-item" onclick="switchView('verifications')">
+                <span>🪪</span> Verifications <span id="verifyBadge" style="display:none;background:#ef4444;color:white;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;margin-left:4px;"></span>
+            </button>
+            <button class="nav-item" onclick="switchView('audit')">
+                <span>📋</span> Audit Log
+            </button>
+            <a href="dashboard.html" class="nav-item" style="text-decoration:none;">
+                <span>↩️</span> Back to App
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="admin-chip">
+                <div class="admin-avatar" id="adminInitial">A</div>
+                <div>
+                    <div class="admin-name" id="adminName">Admin</div>
+                    <div class="admin-role">Super Admin</div>
+                </div>
+            </div>
+            <button onclick="logout()" class="btn-ghost w-full" style="font-size:0.85rem;color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.1);">🚪 Sign Out</button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+        <header class="topbar">
+            <span class="topbar-title" id="topbarTitle">📊 Overview</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <span id="lastRefresh" style="font-size:0.78rem;color:var(--text-light);"></span>
+                <button onclick="refreshAll()" class="btn-ghost" style="padding:8px 14px;font-size:0.85rem;">🔄 Refresh</button>
+            </div>
+        </header>
+
+        <div class="page-content">
+
+            <!-- ── OVERVIEW ── -->
+            <div id="viewDashboard">
+                <div class="stats-row" id="statsRow">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:#fdecea;">👥</div>
+                        <div><div class="stat-val" id="statUsers">—</div><div class="stat-lbl">Total Users</div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:var(--green-light);">💼</div>
+                        <div><div class="stat-val" id="statJobs">—</div><div class="stat-lbl">Total Jobs</div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:#e3f2fd;">🟢</div>
+                        <div><div class="stat-val" id="statActive">—</div><div class="stat-lbl">Active Jobs</div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:#fff8e1;">🔒</div>
+                        <div><div class="stat-val" id="statEscrow">—</div><div class="stat-lbl">In Escrow (KES)</div></div>
+                    </div>
+                </div>
+
+                <!-- Quick links -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:560px;">
+                    <button onclick="switchView('users')" class="stat-card" style="cursor:pointer;text-align:left;border:1.5px dashed var(--border);box-shadow:none;">
+                        <div class="stat-icon" style="background:#fdecea;">👥</div>
+                        <div><div style="font-weight:700;color:var(--text-primary);">Manage Users</div><div class="stat-lbl">View & delete accounts</div></div>
+                    </button>
+                    <button onclick="switchView('jobs')" class="stat-card" style="cursor:pointer;text-align:left;border:1.5px dashed var(--border);box-shadow:none;">
+                        <div class="stat-icon" style="background:var(--green-light);">💼</div>
+                        <div><div style="font-weight:700;color:var(--text-primary);">Manage Jobs</div><div class="stat-lbl">View & delete listings</div></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── USERS ── -->
+            <div id="viewUsers" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title">
+                            👥 All Users
+                            <span class="count-badge" id="userCount">0</span>
+                        </div>
+                        <div class="search-wrap">
+                            <span class="si">🔍</span>
+                            <input type="text" class="glass-input" placeholder="Search name / phone…" oninput="filterUsers(this.value)">
+                        </div>
+                    </div>
+                    <div id="usersTableWrap">
+                        <div class="table-state"><div class="icon">⏳</div><p>Loading users…</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── JOBS ── -->
+            <div id="viewJobs" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title">
+                            💼 All Jobs
+                            <span class="count-badge" id="jobCount">0</span>
+                        </div>
+                        <div class="search-wrap">
+                            <span class="si">🔍</span>
+                            <input type="text" class="glass-input" placeholder="Search title / location…" oninput="filterJobs(this.value)">
+                        </div>
+                    </div>
+                    <div id="jobsTableWrap">
+                        <div class="table-state"><div class="icon">⏳</div><p>Loading jobs…</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── VERIFICATIONS ── -->
+            <div id="viewVerifications" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title">
+                            🪪 Pending Verifications
+                            <span class="count-badge" id="verifyCount">0</span>
+                        </div>
+                        <button onclick="loadVerifications()" class="btn-ghost" style="padding:8px 14px;font-size:0.85rem;">🔄 Refresh</button>
+                    </div>
+                    <div id="verificationsWrap">
+                        <div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── AUDIT LOG ── -->
+            <div id="viewAudit" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title">📋 Audit Log</div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="auditActionFilter" class="glass-input" placeholder="Filter by action…" style="font-size:0.85rem;" oninput="loadAuditLog()">
+                            <button onclick="loadAuditLog()" class="btn-ghost" style="padding:8px 14px;font-size:0.85rem;">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <div id="auditWrap">
+                        <div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>
+                    </div>
+                    <div id="auditPagination" style="display:flex;gap:8px;justify-content:center;margin-top:16px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<div id="adm-toast-container"></div>
+<div id="admConfirmOverlay">
+    <div class="adm-confirm-box">
+        <div class="adm-confirm-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        </div>
+        <div class="adm-confirm-title" id="admConfirmTitle">Are you sure?</div>
+        <p class="adm-confirm-msg" id="admConfirmMsg"></p>
+        <div class="adm-confirm-actions">
+            <button class="adm-confirm-cancel" onclick="admConfirmCancel()">Cancel</button>
+            <button class="adm-confirm-ok" id="admConfirmOkBtn" onclick="admConfirmOk()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reject reason dialog -->
+<div id="admRejectOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.2);">
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:8px;">Reject Verification</div>
+        <p id="admRejectMsg" style="font-size:0.88rem;color:#6b7280;margin-bottom:16px;"></p>
+        <textarea id="admRejectReason" rows="3" placeholder="Reason (e.g. Document unclear, expired ID…)"
+            style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:0.88rem;font-family:'Inter',sans-serif;resize:none;outline:none;box-sizing:border-box;margin-bottom:16px;"
+            onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="admRejectCancel()" style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;background:white;font-weight:600;cursor:pointer;font-size:0.88rem;">Cancel</button>
+            <button onclick="admRejectOk()" style="padding:9px 20px;border-radius:8px;border:none;background:#ef4444;color:white;font-weight:700;cursor:pointer;font-size:0.88rem;">Reject</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Toast ──
+    function admToast(type, title, msg) {
+        const c = document.getElementById('adm-toast-container');
+        const t = document.createElement('div');
+        t.className = `adm-toast t-${type}`;
+        t.innerHTML = `<div class="adm-toast-body"><div class="adm-toast-title">${title}</div>${msg ? `<div class="adm-toast-msg">${msg}</div>` : ''}</div><button class="adm-toast-close" onclick="admDismissToast(this.closest('.adm-toast'))">✕</button>`;
+        c.appendChild(t);
+        t._tmr = setTimeout(() => admDismissToast(t), type === 'error' ? 6000 : 4000);
+    }
+    function admDismissToast(t) {
+        if (!t || t._gone) return; t._gone = true;
+        clearTimeout(t._tmr); t.classList.add('adm-hiding');
+        setTimeout(() => t.remove(), 260);
+    }
+
+    // ── Confirm ──
+    let _admCb = null;
+    function admConfirm(title, msg, onConfirm) {
+        document.getElementById('admConfirmTitle').textContent = title;
+        document.getElementById('admConfirmMsg').textContent   = msg;
+        _admCb = onConfirm;
+        document.getElementById('admConfirmOverlay').classList.add('open');
+    }
+    function admConfirmOk()    { document.getElementById('admConfirmOverlay').classList.remove('open'); if (_admCb) { const cb = _admCb; _admCb = null; cb(); } }
+    function admConfirmCancel(){ document.getElementById('admConfirmOverlay').classList.remove('open'); _admCb = null; }
+
+    // ── Reject reason dialog ──
+    let _admRejectCb = null;
+    function admRejectDialog(msg, onConfirm) {
+        document.getElementById('admRejectMsg').textContent = msg;
+        document.getElementById('admRejectReason').value = '';
+        _admRejectCb = onConfirm;
+        const el = document.getElementById('admRejectOverlay');
+        el.style.display = 'flex';
+    }
+    function admRejectOk() {
+        const reason = document.getElementById('admRejectReason').value.trim();
+        document.getElementById('admRejectOverlay').style.display = 'none';
+        if (_admRejectCb) { const cb = _admRejectCb; _admRejectCb = null; cb(reason); }
+    }
+    function admRejectCancel() {
+        document.getElementById('admRejectOverlay').style.display = 'none';
+        _admRejectCb = null;
+    }
+
+    // ── Auth guard ──
+    // Token lives in httpOnly cookie — we can't read it from JS.
+    // Use the role/name stored in localStorage (non-sensitive display data).
+    const role = localStorage.getItem('userRole');
+    const name = localStorage.getItem('userName');
+
+    if (role !== 'admin') {
+        window.location.href = 'login.html';
+    } else {
+        document.getElementById('adminName').textContent    = name || 'Admin';
+        document.getElementById('adminInitial').textContent = (name || 'A').charAt(0).toUpperCase();
+    }
+
+    function authHeaders() {
+        return { 'Content-Type': 'application/json' };
+    }
+
+    function apiFetch(url, opts = {}) {
+        return fetch(url, { credentials: 'include', ...opts });
+    }
+
+    function logout() {
+        apiFetch('/api/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {});
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    // ── View switching ──
+    let _currentView = 'dashboard';
+    const viewTitles = { dashboard: '📊 Overview', users: '👥 Users', jobs: '💼 Jobs',
+        verifications: '🪪 Verifications', audit: '📋 Audit Log' };
+
+    function switchView(view) {
+        _currentView = view;
+        ['dashboard', 'users', 'jobs', 'verifications', 'audit'].forEach(v => {
+            const el = document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1));
+            if (el) el.style.display = v === view ? 'block' : 'none';
+        });
+        document.getElementById('topbarTitle').textContent = viewTitles[view] || view;
+        document.querySelectorAll('.nav-item').forEach(el => {
+            const text = el.textContent.trim().toLowerCase();
+            const match = view === 'dashboard' ? text.includes('overview')
+                : view === 'verifications' ? text.includes('verification')
+                : text.includes(view);
+            el.classList.toggle('active', match);
+        });
+        if (view === 'users')         loadUsers();
+        if (view === 'jobs')          loadAdminJobs();
+        if (view === 'verifications') loadVerifications();
+        if (view === 'audit')         loadAuditLog();
+    }
+
+    // ── Data caches ──
+    let _users = [];
+    let _jobs  = [];
+
+    // ── Stats ──
+    async function loadStats() {
+        try {
+            const res  = await apiFetch('/api/admin/stats', { headers: authHeaders() });
+            const data = await res.json();
+            document.getElementById('statUsers').textContent  = data.totalUsers  ?? '—';
+            document.getElementById('statJobs').textContent   = data.totalJobs   ?? '—';
+            document.getElementById('statActive').textContent = data.activeJobs  ?? '—';
+            document.getElementById('statEscrow').textContent =
+                data.escrowTotal != null ? Number(data.escrowTotal).toLocaleString() : '—';
+            document.getElementById('lastRefresh').textContent =
+                'Updated ' + new Date().toLocaleTimeString('en-KE');
+        } catch { /* silent */ }
+    }
+
+    // ── Users ──
+    async function loadUsers() {
+        document.getElementById('usersTableWrap').innerHTML =
+            '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+        try {
+            const res = await apiFetch('/api/admin/users', { headers: authHeaders() });
+            _users = await res.json();
+            document.getElementById('userCount').textContent = _users.length;
+            renderUsersTable(_users);
+        } catch {
+            document.getElementById('usersTableWrap').innerHTML =
+                '<div class="table-state"><div class="icon">⚠️</div><p>Failed to load users.</p></div>';
+        }
+    }
+
+    function filterUsers(q) {
+        const lq = q.toLowerCase();
+        renderUsersTable(_users.filter(u =>
+            (u.name  || '').toLowerCase().includes(lq) ||
+            (u.phone || '').includes(lq)
+        ));
+    }
+
+    function renderUsersTable(users) {
+        const wrap = document.getElementById('usersTableWrap');
+        if (!users.length) {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">🔍</div><p>No users found.</p></div>';
+            return;
+        }
+        const rolePill = r => {
+            const map = { worker: 'role-worker', employer: 'role-employer', admin: 'role-admin' };
+            return `<span class="role-pill ${map[r]||'role-worker'}">${r}</span>`;
+        };
+        const rows = users.map(u => {
+            const joined = u.dateJoined
+                ? new Date(u.dateJoined).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'})
+                : '—';
+            const skills = u.role === 'worker' && u.skills?.length
+                ? u.skills.slice(0,3).join(', ') + (u.skills.length > 3 ? '…' : '')
+                : '—';
+            return `<tr>
+                <td>
+                    <div class="cell-primary">${u.name}</div>
+                    <div class="cell-mono">${u.phone || '—'}</div>
+                </td>
+                <td>${rolePill(u.role)}</td>
+                <td>${skills}</td>
+                <td style="white-space:nowrap;color:var(--text-light);font-size:0.8rem;">${joined}</td>
+                <td>
+                    <button class="btn-del" onclick="deleteUser('${u._id}', '${u.name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+                </td>
+            </tr>`;
+        }).join('');
+        wrap.innerHTML = `<div style="overflow-x:auto;">
+            <table class="admin-table">
+                <thead><tr>
+                    <th>User</th><th>Role</th><th>Skills</th><th>Joined</th><th>Action</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    async function deleteUser(id, name) {
+        admConfirm(`Delete user "${name}"?`, 'This is permanent and cannot be undone.', async () => {
+            try {
+                const res  = await apiFetch(`/api/admin/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+                const data = await res.json();
+                if (res.ok) {
+                    _users = _users.filter(u => u._id !== id);
+                    document.getElementById('userCount').textContent = _users.length;
+                    renderUsersTable(_users);
+                    loadStats();
+                    admToast('success', 'User deleted', `"${name}" has been removed.`);
+                } else {
+                    admToast('error', 'Delete failed', data.msg || 'An error occurred.');
+                }
+            } catch { admToast('error', 'Connection error', 'Could not reach the server.'); }
+        });
+    }
+
+    // ── Jobs ──
+    async function loadAdminJobs() {
+        document.getElementById('jobsTableWrap').innerHTML =
+            '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+        try {
+            const res = await apiFetch('/api/admin/jobs', { headers: authHeaders() });
+            _jobs = await res.json();
+            document.getElementById('jobCount').textContent = _jobs.length;
+            renderJobsTable(_jobs);
+        } catch {
+            document.getElementById('jobsTableWrap').innerHTML =
+                '<div class="table-state"><div class="icon">⚠️</div><p>Failed to load jobs.</p></div>';
+        }
+    }
+
+    function filterJobs(q) {
+        const lq = q.toLowerCase();
+        renderJobsTable(_jobs.filter(j =>
+            (j.title    || '').toLowerCase().includes(lq) ||
+            (j.location || '').toLowerCase().includes(lq)
+        ));
+    }
+
+    function renderJobsTable(jobs) {
+        const wrap = document.getElementById('jobsTableWrap');
+        if (!jobs.length) {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">🔍</div><p>No jobs found.</p></div>';
+            return;
+        }
+        const statusPill = s => {
+            const map = {
+                'Open':        ['sp-open',     '🟢 Open'],
+                'In Progress': ['sp-progress', '🔵 In Progress'],
+                'Completed':   ['sp-done',     '✅ Completed'],
+            };
+            const c = map[s] || ['sp-done', s];
+            return `<span class="status-pill ${c[0]}">${c[1]}</span>`;
+        };
+        const escrowPill = s => {
+            if (s === 'In-Escrow') return `<span class="status-pill sp-escrow">🔒 Escrow</span>`;
+            if (s === 'Released')  return `<span class="status-pill sp-done">✅ Released</span>`;
+            return '';
+        };
+        const rows = jobs.map(j => {
+            const date     = new Date(j.createdAt).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
+            const employer = j.employer ? `${j.employer.name || '—'}` : '—';
+            return `<tr>
+                <td>
+                    <div class="cell-primary" style="text-transform:capitalize;">${j.title}</div>
+                    <div style="font-size:0.78rem;color:var(--text-light);">📍 ${j.location}</div>
+                </td>
+                <td style="font-size:0.85rem;">${employer}</td>
+                <td>${statusPill(j.status)}</td>
+                <td>
+                    <span style="font-weight:800;color:var(--green);font-family:'Outfit',sans-serif;">
+                        KES ${Number(j.pay).toLocaleString()}
+                    </span>
+                    ${escrowPill(j.paymentStatus)}
+                </td>
+                <td style="white-space:nowrap;color:var(--text-light);font-size:0.8rem;">${date}</td>
+                <td>
+                    <button class="btn-del" onclick="deleteJob('${j._id}', '${j.title.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+                </td>
+            </tr>`;
+        }).join('');
+        wrap.innerHTML = `<div style="overflow-x:auto;">
+            <table class="admin-table">
+                <thead><tr>
+                    <th>Job</th><th>Employer</th><th>Status</th><th>Pay</th><th>Posted</th><th>Action</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    async function deleteJob(id, title) {
+        admConfirm(`Delete job "${title}"?`, 'This is permanent and cannot be undone.', async () => {
+            try {
+                const res  = await apiFetch(`/api/admin/jobs/${id}`, { method: 'DELETE', headers: authHeaders() });
+                const data = await res.json();
+                if (res.ok) {
+                    _jobs = _jobs.filter(j => j._id !== id);
+                    document.getElementById('jobCount').textContent = _jobs.length;
+                    renderJobsTable(_jobs);
+                    loadStats();
+                    admToast('success', 'Job deleted', `"${title}" has been removed.`);
+                } else {
+                    admToast('error', 'Delete failed', data.msg || 'An error occurred.');
+                }
+            } catch { admToast('error', 'Connection error', 'Could not reach the server.'); }
+        });
+    }
+
+    // ── Verifications ──
+    let _verifications = [];
+
+    async function loadVerifications() {
+        const wrap = document.getElementById('verificationsWrap');
+        wrap.innerHTML = '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+        try {
+            const res = await apiFetch('/api/admin/verifications', { headers: authHeaders() });
+            _verifications = await res.json();
+            const badge = document.getElementById('verifyBadge');
+            const cnt   = document.getElementById('verifyCount');
+            if (cnt) cnt.textContent = _verifications.length;
+            if (badge) {
+                if (_verifications.length) { badge.textContent = _verifications.length; badge.style.display = 'inline'; }
+                else badge.style.display = 'none';
+            }
+            renderVerifications();
+        } catch {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">⚠️</div><p>Failed to load verifications.</p></div>';
+        }
+    }
+
+    function renderVerifications() {
+        const wrap = document.getElementById('verificationsWrap');
+        if (!_verifications.length) {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">✅</div><p>No pending verifications.</p></div>';
+            return;
+        }
+        const rows = _verifications.map(u => {
+            const joined = u.dateJoined ? new Date(u.dateJoined).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'}) : '—';
+            const docLink = u.verificationDoc ? `<a href="${encodeURI('/'+u.verificationDoc)}" target="_blank" style="color:var(--green);font-size:0.82rem;">View Document</a>` : '—';
+            return `<tr>
+                <td><div class="cell-primary">${escapeHtml(u.name)}</div><div class="cell-mono">${u.phone||'—'}</div></td>
+                <td><span class="role-pill role-${u.role||'worker'}">${u.role||'—'}</span></td>
+                <td>${docLink}</td>
+                <td style="white-space:nowrap;color:var(--text-light);font-size:0.8rem;">${joined}</td>
+                <td style="display:flex;gap:8px;">
+                    <button class="btn-del" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;" onclick="approveVerify('${u._id}','${escapeHtml(u.name).replace(/'/g,"\\'")}')">✅ Approve</button>
+                    <button class="btn-del" onclick="rejectVerify('${u._id}','${escapeHtml(u.name).replace(/'/g,"\\'")}')">❌ Reject</button>
+                </td>
+            </tr>`;
+        }).join('');
+        wrap.innerHTML = `<div style="overflow-x:auto;"><table class="admin-table">
+            <thead><tr><th>User</th><th>Role</th><th>Document</th><th>Joined</th><th>Actions</th></tr></thead>
+            <tbody>${rows}</tbody></table></div>`;
+    }
+
+    function escapeHtml(str) {
+        return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function approveVerify(userId, name) {
+        admConfirm(`Approve "${name}"?`, 'This will mark their identity as verified.', async () => {
+            try {
+                const res  = await apiFetch(`/api/admin/verify/${userId}`, { method:'PUT', headers:authHeaders() });
+                const data = await res.json();
+                if (res.ok) { admToast('success','Verified!', data.msg); loadVerifications(); }
+                else admToast('error','Error', data.msg||'Failed.');
+            } catch { admToast('error','Connection error','Could not reach the server.'); }
+        });
+    }
+
+    async function rejectVerify(userId, name) {
+        admRejectDialog(`Enter a reason for rejecting "${name}". This will be shown to the user.`, async (reason) => {
+            try {
+                const res  = await apiFetch(`/api/admin/verify/${userId}`, { method:'DELETE', headers:authHeaders(), body:JSON.stringify({reason}) });
+                const data = await res.json();
+                if (res.ok) { admToast('success','Rejected', data.msg); loadVerifications(); }
+                else admToast('error','Error', data.msg||'Failed.');
+            } catch { admToast('error','Connection error','Could not reach the server.'); }
+        });
+    }
+
+    // ── Audit Log ──
+    let _auditPage = 1;
+    const AUDIT_LIMIT = 30;
+
+    async function loadAuditLog(page) {
+        if (page) _auditPage = page;
+        const wrap = document.getElementById('auditWrap');
+        const action = document.getElementById('auditActionFilter')?.value.trim() || '';
+        let url = `/api/audit?page=${_auditPage}&limit=${AUDIT_LIMIT}`;
+        if (action) url += `&action=${encodeURIComponent(action)}`;
+        wrap.innerHTML = '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+        try {
+            const res  = await apiFetch(url, { headers: authHeaders() });
+            const data = await res.json();
+            const logs = data.logs || [];
+            if (!logs.length) {
+                wrap.innerHTML = '<div class="table-state"><div class="icon">📋</div><p>No audit entries found.</p></div>';
+                document.getElementById('auditPagination').innerHTML = '';
+                return;
+            }
+            const rows = logs.map(l => {
+                const when = new Date(l.createdAt).toLocaleString('en-KE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+                return `<tr>
+                    <td style="white-space:nowrap;font-size:0.8rem;color:var(--text-light);">${when}</td>
+                    <td><div class="cell-primary">${escapeHtml(l.userName||'')}</div><div class="cell-mono">${l.ip||''}</div></td>
+                    <td><span style="padding:3px 9px;border-radius:20px;background:#e8f0fe;color:#1a73e8;font-size:0.75rem;font-weight:700;">${escapeHtml(l.action)}</span></td>
+                    <td style="font-size:0.82rem;color:var(--text-secondary);">${escapeHtml(l.entity||'')} ${escapeHtml(l.details||'')}</td>
+                </tr>`;
+            }).join('');
+            wrap.innerHTML = `<div style="overflow-x:auto;"><table class="admin-table">
+                <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+                <tbody>${rows}</tbody></table></div>`;
+
+            // Pagination
+            const total = data.total || 0;
+            const totalPages = Math.ceil(total / AUDIT_LIMIT);
+            const pag = document.getElementById('auditPagination');
+            pag.innerHTML = '';
+            if (_auditPage > 1) {
+                const prev = document.createElement('button');
+                prev.className = 'btn-ghost'; prev.style.padding = '7px 16px'; prev.textContent = '← Prev';
+                prev.onclick = () => loadAuditLog(_auditPage - 1);
+                pag.appendChild(prev);
+            }
+            const info = document.createElement('span');
+            info.style.cssText = 'font-size:0.82rem;color:var(--text-secondary);padding:0 8px;';
+            info.textContent = `Page ${_auditPage} of ${totalPages}`;
+            pag.appendChild(info);
+            if (_auditPage < totalPages) {
+                const next = document.createElement('button');
+                next.className = 'btn-ghost'; next.style.padding = '7px 16px'; next.textContent = 'Next →';
+                next.onclick = () => loadAuditLog(_auditPage + 1);
+                pag.appendChild(next);
+            }
+        } catch {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">⚠️</div><p>Failed to load audit log.</p></div>';
+        }
+    }
+
+    function refreshAll() {
+        loadStats();
+        if (_currentView === 'users')         loadUsers();
+        if (_currentView === 'jobs')          loadAdminJobs();
+        if (_currentView === 'verifications') loadVerifications();
+        if (_currentView === 'audit')         loadAuditLog();
+    }
+
+    // Initial load — also update verification badge count
+    loadStats();
+    loadVerifications(); // pre-load badge
+</script>
+</body>
+</html>

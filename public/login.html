@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazi Mtaani – Sign In</title>
+    <meta name="description" content="Sign in to your Kazi Mtaani account to find work or hire talent.">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { background: var(--white); }
+        .auth-page { min-height:100vh; display:flex; }
+        .auth-left {
+            flex:1; background:var(--green); color:white; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; padding:60px; position:relative; overflow:hidden;
+        }
+        .auth-left::before { content:''; position:absolute; top:-100px; right:-100px;
+            width:350px; height:350px; background:rgba(255,255,255,0.09); border-radius:50%; }
+        .auth-left::after  { content:''; position:absolute; bottom:-80px; left:-80px;
+            width:280px; height:280px; background:rgba(255,255,255,0.06); border-radius:50%; }
+        .auth-left-content { position:relative; z-index:1; text-align:center; max-width:380px; }
+        .auth-left h2 { font-size:2.2rem; margin-bottom:14px; color:white; }
+        .auth-left p  { color:rgba(255,255,255,0.82); font-size:1rem; line-height:1.7; margin-bottom:36px; }
+        .trust-item { display:flex; align-items:center; gap:12px; margin-bottom:16px;
+            background:rgba(255,255,255,0.12); border-radius:var(--radius-md); padding:14px 18px; text-align:left; }
+        .trust-item .icon { font-size:1.5rem; flex-shrink:0; }
+        .trust-item p { margin:0; color:rgba(255,255,255,0.9); font-size:0.88rem; }
+        .trust-item strong { color:white; display:block; font-size:0.95rem; margin-bottom:2px; }
+        .auth-right { flex:1; display:flex; align-items:center; justify-content:center; padding:40px; background:var(--off-white); }
+        .auth-form-box { width:100%; max-width:420px; animation:slideUp 0.5s ease-out; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        .form-logo { font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800;
+            color:var(--green); text-decoration:none; display:block; margin-bottom:28px; }
+        .form-logo span { color:var(--text-primary); }
+        .form-header h1 { font-size:1.8rem; color:var(--text-primary); margin-bottom:6px; }
+        .form-header p { color:var(--text-secondary); font-size:0.92rem; margin-bottom:28px; }
+        .form-group { margin-bottom:18px; }
+        .input-wrapper { position:relative; }
+        .input-wrapper .input-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%);
+            font-size:1rem; color:var(--text-light); }
+        .input-wrapper input { padding-left:42px; }
+        .input-wrapper .toggle-pw { position:absolute; right:14px; top:50%; transform:translateY(-50%);
+            cursor:pointer; font-size:1rem; color:var(--text-light); background:none; border:none; padding:4px; }
+        .form-footer-text { text-align:center; color:var(--text-secondary); font-size:0.9rem; margin-top:24px; }
+        .form-footer-text a { color:var(--green); font-weight:600; text-decoration:none; }
+        .form-footer-text a:hover { text-decoration:underline; }
+        #statusMsg { display:none; margin-top:14px; }
+
+        /* ── Google Sign-In ── */
+        .or-divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
+        .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+        .or-divider span { font-size:0.82rem; color:var(--text-light); font-weight:500; white-space:nowrap; }
+        .btn-google {
+            width:100%; display:flex; align-items:center; justify-content:center; gap:12px;
+            padding:13px 20px; border:1.5px solid var(--border); border-radius:var(--radius-md);
+            background:var(--white); color:var(--text-primary); font-size:0.95rem; font-weight:600;
+            cursor:pointer; transition:var(--transition); font-family:'Inter',sans-serif;
+        }
+        .btn-google:hover { background:var(--off-white); border-color:var(--green-mid); box-shadow:var(--shadow-sm); }
+        .btn-google img { width:20px; height:20px; }
+        .btn-google:disabled { opacity:0.6; cursor:not-allowed; }
+
+        /* Hidden Google one-tap container */
+        #g_id_onload { display:none; }
+
+        #regSuccessBanner {
+            display:none;
+            align-items:center;
+            gap:12px;
+            padding:14px 18px;
+            background:linear-gradient(135deg,#dcfce7,#bbf7d0);
+            border:1.5px solid #86efac;
+            border-radius:var(--radius-md);
+            margin-bottom:24px;
+            animation:slideUp 0.4s ease-out;
+        }
+        #regSuccessBanner .reg-checkmark {
+            width:36px; height:36px; border-radius:50%;
+            background:#22c55e; color:white;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.1rem; flex-shrink:0;
+        }
+        #regSuccessBanner .reg-text strong { display:block; color:#15803d; font-size:0.95rem; }
+        #regSuccessBanner .reg-text span   { color:#166534; font-size:0.82rem; }
+
+        @media (max-width:768px) { .auth-left { display:none; } .auth-right { background:var(--white); padding:28px 20px; } }
+
+    </style>
+</head>
+<body>
+
+<div class="auth-page">
+    <!-- LEFT PANEL -->
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <a href="index.html" class="form-logo" style="color:white;">Kazi<span style="color:rgba(255,255,255,0.7);">Mtaani</span></a>
+            <h2>Welcome Back!</h2>
+            <p>Sign in and continue connecting with trusted workers and employers across Kenya.</p>
+            <div class="trust-item">
+                <div class="icon">🛡️</div>
+                <div><strong>Secure M-Pesa Escrow</strong><p>Your money is protected until work is done.</p></div>
+            </div>
+            <div class="trust-item">
+                <div class="icon">⚡</div>
+                <div><strong>Hire in Minutes</strong><p>Post a job and get applicants right away.</p></div>
+            </div>
+            <div class="trust-item">
+                <div class="icon">📱</div>
+                <div><strong>WhatsApp Integration</strong><p>Connect directly with your hire instantly.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="auth-right">
+        <div class="auth-form-box">
+            <a href="index.html" class="form-logo">Kazi<span>Mtaani</span></a>
+            <!-- Registration success banner (shown when redirected from register.html) -->
+            <div id="regSuccessBanner">
+                <div class="reg-checkmark">✓</div>
+                <div class="reg-text">
+                    <strong>Account Created Successfully! 🎉</strong>
+                    <span>Sign in below with the phone number and password you just set.</span>
+                </div>
+            </div>
+
+            <div class="form-header">
+                <h1>Sign In</h1>
+                <p>Enter your details to access your account.</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">📞</span>
+                        <input type="text" id="phone" class="glass-input" placeholder="e.g. 0712 345 678" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" class="glass-input" placeholder="Enter your password" required>
+                        <button class="toggle-pw" id="togglePassword" type="button" title="Show/hide password">👁️</button>
+                    </div>
+                </div>
+
+                <button type="submit" id="loginBtn" class="btn-primary w-full" style="padding:14px; font-size:1rem; margin-top:6px;">Sign In</button>
+
+                <div style="text-align:center; margin-top:14px;">
+                    <a href="forgot-password.html" style="font-size:0.88rem; color:var(--green); text-decoration:none; font-weight:600;">Forgot Password?</a>
+                </div>
+            </form>
+
+            <div id="statusMsg"></div>
+
+            <!-- OR divider -->
+            <div class="or-divider"><span>or continue with</span></div>
+
+            <!-- Google Sign-In Button natively rendered for reliable popups -->
+            <div style="display:flex; justify-content:center; margin-top:20px; width:100%;">
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-shape="pill"
+                    data-theme="outline"
+                    data-text="signin_with"
+                    data-size="large"
+                    data-logo_alignment="left"
+                    data-width="360">
+                </div>
+            </div>
+
+            <!-- Hidden Google Identity container (fires callback automatically) -->
+            <div id="g_id_onload"
+                data-client_id="670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com"
+                data-callback="handleGoogleCredential"
+                data-auto_prompt="false">
+            </div>
+
+            <p class="form-footer-text">
+                Don't have an account yet? <a href="register.html">Create one free</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Show registration success banner if redirected from register.html ──
+    window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('registered') === 'true') {
+            const banner = document.getElementById('regSuccessBanner');
+            banner.style.display = 'flex';
+            // Auto-dismiss after 6 seconds
+            setTimeout(() => {
+                banner.style.transition = 'opacity 0.5s';
+                banner.style.opacity   = '0';
+                setTimeout(() => banner.style.display = 'none', 500);
+            }, 6000);
+        }
+    });
+
+    // Password toggle — null-safe
+    const toggleBtn = document.getElementById('togglePassword');
+    const pwInput   = document.getElementById('password');
+    if (toggleBtn && pwInput) {
+        toggleBtn.addEventListener('click', () => {
+            const isText = pwInput.type === 'text';
+            pwInput.type = isText ? 'password' : 'text';
+            toggleBtn.textContent = isText ? '👁️' : '🕶️';
+        });
+    }
+
+    // ── Phone / Password Login ──
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Grab elements fresh each call — avoids silent null crashes
+            const phoneEl    = document.getElementById('phone');
+            const passwordEl = document.getElementById('password');
+            const loginBtn   = document.getElementById('loginBtn');
+
+            let phone        = (phoneEl    ? phoneEl.value.trim()    : '');
+            const passwordVal = (passwordEl ? passwordEl.value        : '');
+
+            if (!phone || !passwordVal) {
+                showStatus('error', '⚠️ Please fill in your phone number and password.');
+                return;
+            }
+            if (phone.startsWith('0')) phone = '254' + phone.substring(1);
+
+            if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Signing in…'; }
+
+            try {
+                const res  = await fetch('/api/auth/login', {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ phone, password: passwordVal })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showStatus('success', '✅ ' + (data.msg || 'Access granted! Redirecting…'));
+                    if (data.user) {
+                        saveSession(data);
+                        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                    }
+                } else {
+                    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+                    showStatus('error', '❌ ' + (data.msg || 'Invalid credentials.'));
+                }
+            } catch (err) {
+                if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+                showStatus('error', '⚠️ Connection failed. Is the server running?');
+            }
+        });
+    }
+
+    // ── Google Sign-In ──
+    // Called by the Google SDK after the user picks their account
+    async function handleGoogleCredential(googleResponse) {
+        const btn = document.getElementById('googleSignInBtn');
+        btn.disabled    = true;
+        btn.textContent = 'Signing in…';
+        showStatus('success', '🔄 Verifying with Google…');
+
+        try {
+            const res  = await fetch('/api/auth/google', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' },
+                body:        JSON.stringify({ googleToken: googleResponse.credential })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                saveSession(data);
+                showStatus('success', '✅ Signed in with Google! Redirecting…');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } else if (res.status === 400 && data.msg && data.msg.includes('Phone number and role')) {
+                // First-time Google user — needs to complete profile on register page
+                showStatus('error', '📝 First time here! Please complete your profile.');
+                setTimeout(() => window.location.href = 'register.html?via=google&token=' + encodeURIComponent(googleResponse.credential), 1500);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Google sign-in failed.'));
+                btn.disabled    = false;
+                btn.textContent = 'Sign in with Google';
+                btn.innerHTML   = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Sign in with Google';
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Is the server running?');
+        }
+    }
+
+
+
+    // ── Session helper ──
+    // Token is set as an httpOnly cookie by the server — only non-sensitive
+    // display values are stored in localStorage.
+    function saveSession(data) {
+        localStorage.setItem('userName',  data.user.name  || 'User');
+        localStorage.setItem('userRole',  data.user.role  || 'worker');
+        localStorage.setItem('userId',    data.user.id    || data.user._id);
+        localStorage.setItem('userPhone', data.user.phone || '');
+    }
+
+    function showStatus(type, msg) {
+        const el     = document.getElementById('statusMsg');
+        el.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+        el.textContent = msg;
+        el.style.display = 'flex';
+    }
+</script>
+</body>
+</html>

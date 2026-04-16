@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazi Mtaani – Create Account</title>
+    <meta name="description" content="Join Kazi Mtaani free. Find local work or post jobs across Kenya.">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { background: var(--white); }
+        .auth-page { min-height:100vh; display:flex; }
+        .auth-left {
+            flex:1; background:var(--green); color:white; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; padding:60px; position:relative; overflow:hidden;
+        }
+        .auth-left::before { content:''; position:absolute; top:-120px; right:-80px;
+            width:400px; height:400px; background:rgba(255,255,255,0.08); border-radius:50%; }
+        .auth-left::after  { content:''; position:absolute; bottom:-80px; left:-80px;
+            width:300px; height:300px; background:rgba(255,255,255,0.06); border-radius:50%; }
+        .auth-left-content { position:relative; z-index:1; text-align:center; max-width:380px; }
+        .auth-left h2 { font-size:2.2rem; margin-bottom:14px; color:white; }
+        .auth-left p  { color:rgba(255,255,255,0.82); font-size:1rem; line-height:1.7; margin-bottom:32px; }
+        .benefit-list { list-style:none; text-align:left; }
+        .benefit-list li { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;
+            color:rgba(255,255,255,0.9); font-size:0.92rem; }
+        .benefit-list li::before { content:'✓'; background:rgba(255,255,255,0.2); border-radius:50%;
+            width:24px; height:24px; display:flex; align-items:center; justify-content:center;
+            font-weight:700; flex-shrink:0; font-size:0.8rem; margin-top:1px; }
+        .auth-right { flex:1; display:flex; align-items:center; justify-content:center; padding:40px; background:var(--off-white); overflow-y:auto; }
+        .auth-form-box { width:100%; max-width:460px; animation:slideUp 0.5s ease-out; padding:8px 0; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-6px)}
+            40%{transform:translateX(6px)}
+            60%{transform:translateX(-4px)}
+            80%{transform:translateX(4px)}
+        }
+        .form-logo { font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800;
+            color:var(--green); text-decoration:none; display:block; margin-bottom:28px; }
+        .form-logo span { color:var(--text-primary); }
+        .form-header h1 { font-size:1.8rem; color:var(--text-primary); margin-bottom:6px; }
+        .form-header p { color:var(--text-secondary); font-size:0.92rem; margin-bottom:28px; }
+        .form-group { margin-bottom:18px; }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .input-wrapper { position:relative; }
+        .input-wrapper .input-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%);
+            font-size:1rem; color:var(--text-light); pointer-events:none; }
+        .input-wrapper input, .input-wrapper select { padding-left:42px; }
+        .input-wrapper .toggle-pw { position:absolute; right:14px; top:50%; transform:translateY(-50%);
+            cursor:pointer; background:none; border:none; padding:4px; color:var(--text-light); font-size:1rem; }
+        .role-selector { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+        .role-card { border:2px solid var(--border); border-radius:var(--radius-md); padding:18px 14px;
+            text-align:center; cursor:pointer; transition:var(--transition); background:var(--white); }
+        .role-card:hover { border-color:var(--green-mid); background:var(--green-light); }
+        .role-card.selected { border-color:var(--green); background:var(--green-light); }
+        /* Add CSS radio selector */
+        input[type="radio"].hidden-role:checked + .role-card {
+            border-color:var(--green); background:var(--green-light);
+        }
+        .role-card .role-icon { font-size:2rem; margin-bottom:8px; }
+        .role-card strong { display:block; font-size:0.95rem; color:var(--text-primary); margin-bottom:4px; }
+        .role-card small { font-size:0.8rem; color:var(--text-secondary); }
+        .form-footer-text { text-align:center; color:var(--text-secondary); font-size:0.9rem; margin-top:22px; }
+        .form-footer-text a { color:var(--green); font-weight:600; text-decoration:none; }
+        .form-footer-text a:hover { text-decoration:underline; }
+        @media (max-width:768px) {
+            .auth-left { display:none; }
+            .auth-right { background:var(--white); padding:28px 20px; }
+            .form-row { grid-template-columns:1fr; }
+        }
+
+        /* ── Google Sign-In ── */
+        .or-divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
+        .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+        .or-divider span { font-size:0.82rem; color:var(--text-light); font-weight:500; white-space:nowrap; }
+        .btn-google {
+            width:100%; display:flex; align-items:center; justify-content:center; gap:12px;
+            padding:13px 20px; border:1.5px solid var(--border); border-radius:var(--radius-md);
+            background:var(--white); color:var(--text-primary); font-size:0.95rem; font-weight:600;
+            cursor:pointer; transition:var(--transition); font-family:'Inter',sans-serif;
+        }
+        .btn-google:hover { background:var(--off-white); border-color:var(--green-mid); box-shadow:var(--shadow-sm); }
+        .btn-google img { width:20px; height:20px; }
+        .btn-google:disabled { opacity:0.6; cursor:not-allowed; }
+        #g_id_onload { display:none; }
+
+        /* Phone step for new Google users */
+        #googlePhoneStep {
+            display:none; margin-top:20px; padding:20px; background:var(--off-white);
+            border:1.5px solid var(--green-mid); border-radius:var(--radius-md); animation:slideUp 0.3s ease-out;
+        }
+        #googlePhoneStep h3 { font-size:1rem; color:var(--text-primary); margin-bottom:6px; }
+        #googlePhoneStep p  { font-size:0.85rem; color:var(--text-secondary); margin-bottom:14px; }
+        #statusMsg { display:none; margin-top:14px; }
+
+        /* ── Password Strength Meter ── */
+        .pw-strength-bar {
+            display:flex; gap:4px; margin-top:8px;
+        }
+        .pw-strength-bar span {
+            flex:1; height:4px; border-radius:4px;
+            background:var(--border); transition:background 0.35s ease;
+        }
+        .pw-strength-label {
+            font-size:0.75rem; font-weight:600; margin-top:4px; transition:color 0.3s;
+            color: var(--text-light);
+        }
+        .pw-req-list {
+            list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:5px;
+        }
+        .pw-req-list li {
+            display:flex; align-items:center; gap:8px;
+            font-size:0.8rem; color:var(--text-secondary); transition:color 0.25s;
+        }
+        .pw-req-list li .req-icon {
+            width:16px; height:16px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.65rem; font-weight:700; flex-shrink:0;
+            background: #e5e7eb; color:#9ca3af; transition:background 0.25s, color 0.25s;
+        }
+        .pw-req-list li.met .req-icon {
+            background:#dcfce7; color:#16a34a;
+        }
+        .pw-req-list li.met {
+            color:var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-page">
+    <!-- LEFT PANEL -->
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <a href="index.html" style="color:white; font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800; text-decoration:none; display:block; margin-bottom:28px;">
+                Kazi<span style="color:rgba(255,255,255,0.7);">Mtaani</span>
+            </a>
+            <h2>Join Kenya's #1 Local Job Network</h2>
+            <p>Create your free account and start connecting with opportunities in your neighborhood today.</p>
+            <ul class="benefit-list">
+                <li>Free to sign up — no hidden fees</li>
+                <li>Secure M-Pesa escrow on every job</li>
+                <li>Get hired or find talent in minutes</li>
+                <li>Verified profiles build real trust</li>
+                <li>WhatsApp integration for instant contact</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="auth-right">
+        <div class="auth-form-box">
+            <a href="index.html" class="form-logo">Kazi<span>Mtaani</span></a>
+            <div class="form-header">
+                <h1>Create Account</h1>
+                <p>Join thousands of Kenyans earning and hiring every day.</p>
+            </div>
+
+            <!-- Role Selector -->
+            <fieldset style="border:none; padding:0; margin:0 0 20px 0;">
+                <legend style="margin-bottom:12px; font-weight:600;">I want to join as:</legend>
+                <div class="role-selector">
+                    <div style="flex:1;">
+                        <input type="radio" name="regRole" value="worker" id="roleWorker" checked class="hidden-role" style="display:none;">
+                        <label class="role-card" for="roleWorker" style="display:block; height:100%;">
+                            <div class="role-icon">👷</div>
+                            <strong>Worker</strong>
+                            <small>Find & take jobs</small>
+                        </label>
+                    </div>
+                    <div style="flex:1;">
+                        <input type="radio" name="regRole" value="employer" id="roleEmployer" class="hidden-role" style="display:none;">
+                        <label class="role-card" for="roleEmployer" style="display:block; height:100%;">
+                            <div class="role-icon">🏢</div>
+                            <strong>Employer</strong>
+                            <small>Post & hire talent</small>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="regName" class="glass-input" placeholder="e.g. John Kamau" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPhone">Phone Number</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">📞</span>
+                        <input type="text" id="regPhone" class="glass-input" placeholder="e.g. 0712 345 678" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPass">Create Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="regPass" class="glass-input" placeholder="At least 8 chars, letters, numbers & symbols" required autocomplete="new-password">
+                        <button class="toggle-pw" id="togglePassword" type="button">👁️</button>
+                    </div>
+                    <!-- Live strength bar -->
+                    <div class="pw-strength-bar" id="pwStrengthBar" aria-hidden="true">
+                        <span id="pwSeg1"></span>
+                        <span id="pwSeg2"></span>
+                        <span id="pwSeg3"></span>
+                        <span id="pwSeg4"></span>
+                    </div>
+                    <div class="pw-strength-label" id="pwStrengthLabel"></div>
+                    <!-- Requirements checklist -->
+                    <ul class="pw-req-list" id="pwReqList" aria-live="polite">
+                        <li id="req-len"><span class="req-icon">✓</span> At least 8 characters</li>
+                        <li id="req-upper"><span class="req-icon">✓</span> One uppercase letter (A–Z)</li>
+                        <li id="req-lower"><span class="req-icon">✓</span> One lowercase letter (a–z)</li>
+                        <li id="req-num"><span class="req-icon">✓</span> One number (0–9)</li>
+                        <li id="req-special"><span class="req-icon">✓</span> One special character (@$!%*?&amp;#^)</li>
+                    </ul>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary w-full" style="padding:14px; font-size:1rem; margin-top:4px;">
+                    Create Free Account
+                </button>
+            </form>
+
+            <p class="form-footer-text" style="margin-top:14px; font-size:0.8rem; color:var(--text-light);">
+                By creating an account you agree to our <a href="#" style="color:var(--text-secondary);">Terms of Service</a>.
+            </p>
+            <p class="form-footer-text">
+                Already have an account? <a href="login.html">Sign in</a>
+            </p>
+
+            <!-- OR divider -->
+            <div class="or-divider"><span>or sign up with</span></div>
+
+            <!-- Google Sign-Up Button natively rendered for reliable popups -->
+            <div style="display:flex; justify-content:center; margin-top:20px; width:100%;">
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-shape="pill"
+                    data-theme="outline"
+                    data-text="continue_with"
+                    data-size="large"
+                    data-logo_alignment="left"
+                    data-width="360">
+                </div>
+            </div>
+
+            <!-- Hidden Google Identity container -->
+            <div id="g_id_onload"
+                data-client_id="670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com"
+                data-callback="handleGoogleCredential"
+                data-auto_prompt="false">
+            </div>
+
+            <!-- Step 2: Phone collection for new Google users -->
+            <div id="googlePhoneStep">
+                <h3>📞 One more step!</h3>
+                <p>We need your Kenyan phone number for M-Pesa payments.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <div class="input-wrapper">
+                        <span class="input-icon">📞</span>
+                        <input type="text" id="googlePhone" class="glass-input" placeholder="e.g. 0712 345 678">
+                    </div>
+                </div>
+                <button class="btn-primary w-full" onclick="completeGoogleRegistration()" id="completeGoogleBtn" style="padding:12px;">
+                    Complete Registration
+                </button>
+            </div>
+
+            <div id="statusMsg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Role selection handled purely by CSS sibling selector.
+    // Pre-select from URL param
+    const urlRole = new URLSearchParams(window.location.search).get('role');
+    if (urlRole === 'employer') {
+        const empInput = document.getElementById('roleEmployer');
+        if (empInput) empInput.checked = true;
+    }
+
+    // Password toggle - null safe
+    const toggleBtn = document.getElementById('togglePassword');
+    const pwInput = document.getElementById('regPass');
+    if (toggleBtn && pwInput) {
+        toggleBtn.addEventListener('click', () => {
+            const isText = pwInput.type === 'text';
+            pwInput.type = isText ? 'password' : 'text';
+            toggleBtn.textContent = isText ? '👁️' : '🕶️';
+        });
+    }
+
+    // ── Live Password Strength Meter ──
+    const regPassInput = document.getElementById('regPass');
+    const segments     = [document.getElementById('pwSeg1'), document.getElementById('pwSeg2'),
+                          document.getElementById('pwSeg3'), document.getElementById('pwSeg4')];
+    const strengthLabel = document.getElementById('pwStrengthLabel');
+    const reqIds = {
+        len:     document.getElementById('req-len'),
+        upper:   document.getElementById('req-upper'),
+        lower:   document.getElementById('req-lower'),
+        num:     document.getElementById('req-num'),
+        special: document.getElementById('req-special')
+    };
+
+    const STRENGTH_LEVELS = [
+        { label: '',          color: 'transparent' },
+        { label: '⚠️ Too weak',   color: '#ef4444' },
+        { label: '🔶 Weak',        color: '#f97316' },
+        { label: '🔷 Fair',        color: '#eab308' },
+        { label: '✅ Strong',      color: '#22c55e' }
+    ];
+
+    function checkReq(id, met) {
+        reqIds[id].classList.toggle('met', met);
+    }
+
+    regPassInput.addEventListener('input', function () {
+        const v = this.value;
+        const checks = {
+            len:     v.length >= 8,
+            upper:   /[A-Z]/.test(v),
+            lower:   /[a-z]/.test(v),
+            num:     /[0-9]/.test(v),
+            special: /[@$!%*?&#^_\-]/.test(v)
+        };
+
+        Object.entries(checks).forEach(([k, met]) => checkReq(k, met));
+
+        const score = Object.values(checks).filter(Boolean).length; // 0–5
+        // Map 5 checks → 4 bar segments
+        const filled = score === 0 ? 0 : Math.ceil(score / 5 * 4);
+        const level  = score === 0 ? 0 : score <= 2 ? 1 : score === 3 ? 2 : score === 4 ? 3 : 4;
+        const { label, color } = STRENGTH_LEVELS[level];
+
+        segments.forEach((seg, i) => {
+            seg.style.background = i < filled ? color : 'var(--border)';
+        });
+        strengthLabel.textContent = v.length ? label : '';
+        strengthLabel.style.color = color;
+    });
+
+    // ── Phone / Password Registration ──
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+
+        // ── Client-side password requirements check ──
+        const pwVal = document.getElementById('regPass').value;
+        const pwOk = {
+            len:     pwVal.length >= 8,
+            upper:   /[A-Z]/.test(pwVal),
+            lower:   /[a-z]/.test(pwVal),
+            num:     /[0-9]/.test(pwVal),
+            special: /[@$!%*?&#^_\-]/.test(pwVal)
+        };
+        if (!Object.values(pwOk).every(Boolean)) {
+            showStatus('error', '🔐 Password doesn\'t meet all requirements. Please check the list below.');
+            // Highlight unmet requirements with a brief shake
+            const list = document.getElementById('pwReqList');
+            list.style.animation = 'none';
+            setTimeout(() => { list.style.animation = 'shake 0.4s ease'; }, 10);
+            document.getElementById('regPass').focus();
+            return;
+        }
+
+        let rawPhone = document.getElementById('regPhone').value.trim();
+        if (rawPhone.startsWith('0')) rawPhone = '254' + rawPhone.substring(1);
+
+        const userData = {
+            name:     document.getElementById('regName').value,
+            phone:    rawPhone,
+            password: pwVal,
+            role:     document.querySelector('input[name="regRole"]:checked').value
+        };
+
+        btn.disabled    = true;
+        btn.textContent = 'Creating account…';
+
+        try {
+            const res  = await fetch('/api/auth/register', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' },
+                body:        JSON.stringify(userData)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                showStatus('success', '🎉 Account created successfully! Taking you to sign in…');
+                btn.textContent = '✅ Account Created!';
+                setTimeout(() => window.location.href = 'login.html?registered=true', 2500);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Registration failed. Try again.'));
+                btn.disabled    = false;
+                btn.textContent = 'Create Free Account';
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Make sure the server is running.');
+            btn.disabled    = false;
+            btn.textContent = 'Create Free Account';
+        }
+    });
+
+    // ── Google Sign-In / Sign-Up ──
+    let _pendingGoogleToken = null;
+
+    // Check if user was redirected here from login.html with a Google token
+    window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('via') === 'google' && params.get('token')) {
+            _pendingGoogleToken = params.get('token');
+            showGooglePhoneStep();
+        }
+    });
+
+    // Called by Google SDK after the user picks a Google account
+    async function handleGoogleCredential(googleResponse) {
+        _pendingGoogleToken = googleResponse.credential;
+        showStatus('success', '🔄 Verified with Google! Checking account…');
+
+        // First, try to log in (existing user)
+        try {
+            const res  = await fetch('/api/auth/google', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' },
+                body:        JSON.stringify({ googleToken: _pendingGoogleToken })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                // Existing user — redirect to dashboard
+                saveSession(data);
+                showStatus('success', '✅ Welcome back! Redirecting…');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } else if (res.status === 400 && data.msg && data.msg.includes('Phone number and role')) {
+                // New Google user — show phone collection step
+                showStatus('', '');
+                document.getElementById('statusMsg').style.display = 'none';
+                showGooglePhoneStep();
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Google verification failed.'));
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Is the server running?');
+        }
+    }
+
+    function showGooglePhoneStep() {
+        document.getElementById('googlePhoneStep').style.display = 'block';
+        document.getElementById('googlePhone').focus();
+    }
+
+    // Complete Google registration with phone number
+    async function completeGoogleRegistration() {
+        if (!_pendingGoogleToken) return;
+
+        let phone = document.getElementById('googlePhone').value.trim();
+        if (!phone) { showStatus('error', '⚠️ Please enter your phone number.'); return; }
+        if (phone.startsWith('0')) phone = '254' + phone.substring(1);
+
+        const role = document.querySelector('input[name="regRole"]:checked').value;
+        const btn  = document.getElementById('completeGoogleBtn');
+        btn.disabled    = true;
+        btn.textContent = 'Registering…';
+
+        try {
+            const res  = await fetch('/api/auth/google', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' },
+                body:        JSON.stringify({ googleToken: _pendingGoogleToken, phone, role })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                saveSession(data);
+                showStatus('success', '✅ Account created with Google! Redirecting…');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Registration failed.'));
+                btn.disabled    = false;
+                btn.textContent = 'Complete Registration';
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed.');
+            btn.disabled    = false;
+            btn.textContent = 'Complete Registration';
+        }
+    }
+
+
+    // ── Session helper ──
+    // Token is set as an httpOnly cookie by the server — only non-sensitive
+    // display values are stored in localStorage.
+    function saveSession(data) {
+        localStorage.setItem('userName',  data.user.name);
+        localStorage.setItem('userRole',  data.user.role);
+        localStorage.setItem('userId',    data.user.id || data.user._id);
+        localStorage.setItem('userPhone', data.user.phone || '');
+    }
+
+    function showStatus(type, msg) {
+        const el = document.getElementById('statusMsg');
+        if (!msg) { el.style.display = 'none'; return; }
+        el.className     = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+        el.textContent   = msg;
+        el.style.display = 'flex';
+    }
+</script>
+</body>
+</html>

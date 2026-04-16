@@ -1,0 +1,29 @@
+# === SECRETS — NEVER COMMIT THESE ===
+.env
+
+# === DEPENDENCIES ===
+node_modules/
+
+# === DEVELOPMENT UTILITIES ===
+simulate_payment.js
+
+# === EDITOR / OS ===
+.vscode/
+.DS_Store
+Thumbs.db
+
+# === CLAUDE CODE ===
+.claude/
+
+# === UPLOADS (user documents — never commit) ===
+uploads/verification/
+
+# === LOGS ===
+*.log
+
+# === TEMP / DEBUG FILES ===
+tmp-*.json
+tmp-*.txt
+csp-out.txt
+temp.js
+check-db.js

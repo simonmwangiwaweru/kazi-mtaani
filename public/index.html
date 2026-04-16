@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazi Mtaani – Kenya's #1 Local Job Platform</title>
+    <meta name="description" content="Find reliable local workers or get hired fast. Secure M-Pesa escrow payments. Built for Kenya by Kenyans.">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── Navbar ── */
+        .lp-nav {
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid var(--border);
+            position: fixed; top: 0; width: 100%; z-index: 999;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(8px);
+        }
+        .lp-nav-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 66px; max-width: 1200px; margin: 0 auto; padding: 0 24px;
+        }
+        .lp-nav-links { display: flex; align-items: center; gap: 6px; }
+        .lp-nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-weight: 500;
+            padding: 8px 14px; border-radius: var(--radius-sm); font-size: 0.93rem;
+            transition: var(--transition);
+        }
+        .lp-nav-links a:hover { color: var(--green); background: var(--green-light); }
+
+        /* ── Hero (Split Layout) ── */
+        .hero-split {
+            padding: 120px 0 80px;
+            background: linear-gradient(150deg, #f2fbf2 0%, #ffffff 55%, #edf7ff 100%);
+            position: relative; overflow: hidden;
+        }
+        .hero-split::before {
+            content: ''; position: absolute; top: -200px; right: -200px;
+            width: 700px; height: 700px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(20,168,0,0.07) 0%, transparent 60%);
+        }
+        .hero-split::after {
+            content: ''; position: absolute; bottom: -150px; left: -100px;
+            width: 500px; height: 500px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(20,168,0,0.05) 0%, transparent 60%);
+        }
+        .hero-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 60px; align-items: center;
+            position: relative; z-index: 1;
+        }
+        .hero-left { max-width: 580px; }
+        .hero-tag {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--green-light); color: var(--green-dark);
+            padding: 6px 16px; border-radius: 20px; font-size: 0.8rem;
+            font-weight: 700; border: 1px solid var(--green-mid);
+            margin-bottom: 24px; letter-spacing: 0.05em;
+        }
+        .hero-h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+            font-weight: 800; color: var(--text-primary);
+            line-height: 1.08; margin-bottom: 22px;
+            letter-spacing: -0.02em;
+        }
+        .hero-h1 .accent { color: var(--green); }
+        .hero-h1 .underline-green {
+            position: relative; display: inline-block;
+        }
+        .hero-h1 .underline-green::after {
+            content: '';
+            position: absolute; bottom: 2px; left: 0; right: 0;
+            height: 4px; border-radius: 2px;
+            background: linear-gradient(90deg, var(--green), #1de9b6);
+            opacity: 0.5;
+        }
+        .hero-sub {
+            font-size: 1.1rem; color: var(--text-secondary);
+            line-height: 1.7; margin-bottom: 36px; max-width: 480px;
+        }
+        .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+        .hero-trust {
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .hero-trust-item {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.83rem; color: var(--text-secondary); font-weight: 500;
+        }
+        .hero-trust-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+        }
+
+        /* ── Hero Right: Dashboard Mockup ── */
+        .hero-right {
+            position: relative; display: flex;
+            justify-content: center; align-items: center;
+        }
+        .mock-bg {
+            width: 100%; max-width: 460px;
+            background: var(--off-white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+            position: relative;
+        }
+        .mock-topbar {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .mock-topbar-title {
+            font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 700;
+            color: var(--text-secondary); margin-left: 4px;
+        }
+        .mock-job {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px; margin-bottom: 12px;
+            position: relative; overflow: hidden;
+        }
+        .mock-job::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--green); border-radius: 3px 0 0 3px;
+        }
+        .mock-job-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 10px;
+        }
+        .mock-job-badges { display: flex; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+        .mock-pill {
+            font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .mock-pill-green { background: var(--green-light); color: var(--green-dark); border: 1px solid var(--green-mid); }
+        .mock-pill-blue  { background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d8fd; }
+        .mock-job-title { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); font-family: 'Outfit', sans-serif; }
+        .mock-job-meta  { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .mock-pay {
+            font-size: 1.1rem; font-weight: 800; color: var(--green);
+            font-family: 'Outfit', sans-serif; text-align: right; white-space: nowrap;
+        }
+        .mock-pay small { display: block; font-size: 0.65rem; color: var(--text-light); font-weight: 500; }
+        .mock-job-desc {
+            font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .mock-job-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 8px; border-top: 1px solid var(--border);
+        }
+        .mock-applicants { font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; }
+        .mock-btn-apply {
+            background: var(--green); color: white; border: none;
+            padding: 5px 14px; border-radius: 6px; font-size: 0.72rem;
+            font-weight: 700; cursor: default;
+        }
+
+        /* Floating notification badge */
+        .mock-notif {
+            position: absolute; top: -16px; right: -16px;
+            background: white; border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.78rem; white-space: nowrap;
+            animation: floatBadge 3s ease-in-out infinite;
+        }
+        .mock-notif-icon {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: linear-gradient(135deg, #00c853, #1de9b6);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .mock-notif-label { font-weight: 700; color: var(--text-primary); display: block; font-size: 0.78rem; }
+        .mock-notif-sub   { color: var(--text-secondary); font-size: 0.7rem; }
+
+        /* Floating escrow badge */
+        .mock-escrow {
+            position: absolute; bottom: -18px; left: -18px;
+            background: white; border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.78rem; white-space: nowrap;
+            animation: floatBadge 3s ease-in-out 1.5s infinite;
+        }
+        .mock-escrow-icon {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #e3f2fd; border: 1px solid #90caf9;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        @keyframes floatBadge {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-6px); }
+        }
+
+        /* ── Stats Bar ── */
+        .stats-bar {
+            display: flex; justify-content: center; flex-wrap: wrap;
+            gap: 0; background: var(--white);
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+        }
+        .stat-item {
+            text-align: center; padding: 30px 48px;
+            border-right: 1px solid var(--border);
+            flex: 1; min-width: 160px;
+        }
+        .stat-item:last-child { border-right: none; }
+        .stat-num {
+            font-size: 2.2rem; font-weight: 800; color: var(--green);
+            font-family: 'Outfit', sans-serif; display: block; line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.82rem; color: var(--text-secondary);
+            margin-top: 5px; font-weight: 500; display: block;
+        }
+
+        /* ── Section commons ── */
+        .section-label {
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--green); margin-bottom: 10px;
+        }
+        .section-title {
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            color: var(--text-primary); margin-bottom: 14px;
+        }
+        .section-sub {
+            color: var(--text-secondary); max-width: 520px;
+            margin: 0 auto; font-size: 1rem; line-height: 1.65;
+        }
+
+        /* ── Categories ── */
+        .categories-section {
+            padding: 72px 0; background: var(--off-white);
+            border-bottom: 1px solid var(--border);
+        }
+        .category-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 16px; margin-top: 44px;
+        }
+        .category-card {
+            background: var(--white); border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg); padding: 24px 14px 20px;
+            text-align: center; text-decoration: none;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            transition: var(--transition);
+        }
+        .category-card:hover {
+            border-color: var(--green); box-shadow: var(--shadow-md); transform: translateY(-4px);
+        }
+        .cat-icon {
+            width: 52px; height: 52px; background: var(--green-light);
+            border: 1.5px solid var(--green-mid); border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--green); transition: var(--transition);
+        }
+        .category-card:hover .cat-icon { background: var(--green); color: white; border-color: var(--green-dark); }
+        .cat-name { font-weight: 700; font-size: 0.88rem; color: var(--text-primary); line-height: 1.2; }
+        .cat-count { font-size: 0.75rem; color: var(--text-secondary); }
+
+        /* ── Features ── */
+        .features { padding: 90px 0; background: var(--white); }
+        .feature-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 22px; margin-top: 52px;
+        }
+        .feature-card {
+            padding: 32px 28px; border-radius: var(--radius-lg);
+            border: 1.5px solid var(--border); background: var(--white);
+            transition: var(--transition); text-align: left;
+        }
+        .feature-card:hover {
+            border-color: var(--green-mid); box-shadow: var(--shadow-md); transform: translateY(-4px);
+        }
+        .feature-icon {
+            width: 54px; height: 54px; background: var(--green-light);
+            border-radius: var(--radius-md); display: flex; align-items: center;
+            justify-content: center; font-size: 1.6rem; margin-bottom: 20px;
+            border: 1px solid var(--green-mid);
+        }
+        .feature-card h3 { font-size: 1.1rem; margin-bottom: 10px; color: var(--text-primary); }
+        .feature-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+
+        /* ── Testimonials ── */
+        .testimonials { padding: 90px 0; background: var(--off-white); }
+        .testimonial-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px; margin-top: 52px;
+        }
+        .testimonial-card {
+            background: var(--white); border: 1.5px solid var(--border);
+            border-radius: var(--radius-xl); padding: 32px 28px;
+            transition: var(--transition); position: relative;
+        }
+        .testimonial-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+        .testimonial-card::before {
+            content: '"'; position: absolute; top: 20px; right: 28px;
+            font-size: 5rem; line-height: 1; color: var(--green-light);
+            font-family: 'Outfit', sans-serif; font-weight: 800;
+        }
+        .testimonial-stars { display: flex; gap: 3px; margin-bottom: 16px; }
+        .testimonial-stars svg { color: #f9a825; }
+        .testimonial-quote {
+            font-size: 0.95rem; color: var(--text-primary); line-height: 1.75;
+            margin-bottom: 24px; font-style: italic; position: relative; z-index: 1;
+        }
+        .testimonial-author { display: flex; align-items: center; gap: 14px; }
+        .testimonial-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem;
+            color: white; flex-shrink: 0;
+        }
+        .testimonial-name { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+        .testimonial-role { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+
+        /* ── How It Works ── */
+        .how-it-works { padding: 90px 0; background: var(--white); }
+        .hiw-tabs {
+            display: flex; gap: 4px; background: var(--off-white);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 4px; width: fit-content; margin: 0 auto 52px;
+        }
+        .hiw-tab {
+            padding: 9px 24px; border-radius: var(--radius-sm);
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            border: none; background: none; color: var(--text-secondary);
+            transition: var(--transition); font-family: 'Inter', sans-serif;
+        }
+        .hiw-tab.active {
+            background: var(--white); color: var(--green);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+        }
+        .hiw-steps {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 0; position: relative; margin-top: 8px;
+        }
+        .hiw-step { text-align: center; padding: 0 20px; position: relative; }
+        /* Connector line between steps */
+        .hiw-step:not(:last-child)::after {
+            content: ''; position: absolute;
+            top: 34px; left: calc(50% + 34px); right: calc(-50% + 34px);
+            height: 2px; background: var(--border);
+            z-index: 0;
+        }
+        .hiw-icon-wrap {
+            width: 68px; height: 68px; border-radius: 50%;
+            background: var(--green-light); border: 2px solid var(--green-mid);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; color: var(--green);
+            position: relative; z-index: 1;
+            transition: var(--transition);
+        }
+        .hiw-step:hover .hiw-icon-wrap {
+            background: var(--green); color: white;
+            border-color: var(--green); box-shadow: var(--shadow-green);
+            transform: scale(1.06);
+        }
+        .hiw-step-num {
+            position: absolute; top: -4px; right: -4px;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--green); color: white;
+            font-size: 0.65rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; border: 2px solid white;
+        }
+        .hiw-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .hiw-desc  { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ── CTA ── */
+        .cta-section {
+            padding: 100px 24px; text-align: center;
+            background: linear-gradient(135deg, #0a8600 0%, #14a800 50%, #0d9c00 100%);
+            color: white; position: relative; overflow: hidden;
+        }
+        .cta-section::before {
+            content: ''; position: absolute; top: -150px; right: -100px;
+            width: 500px; height: 500px; background: rgba(255,255,255,0.06); border-radius: 50%;
+        }
+        .cta-section::after {
+            content: ''; position: absolute; bottom: -120px; left: -80px;
+            width: 400px; height: 400px; background: rgba(255,255,255,0.04); border-radius: 50%;
+        }
+        .cta-section h2 {
+            font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 14px;
+            color: white; position: relative; z-index: 1;
+        }
+        .cta-section p {
+            color: rgba(255,255,255,0.82); font-size: 1.05rem; margin-bottom: 40px;
+            max-width: 500px; margin-inline: auto; position: relative; z-index: 1;
+        }
+        .cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+        .cta-section .btn-white {
+            background: white; color: var(--green); border: 2px solid white;
+            padding: 15px 36px; border-radius: var(--radius-md); font-weight: 700;
+            font-size: 0.95rem; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 8px; transition: var(--transition);
+        }
+        .cta-section .btn-white:hover { background: #f0faf0; box-shadow: 0 6px 24px rgba(0,0,0,0.15); transform: translateY(-2px); }
+        .cta-section .btn-clear {
+            background: transparent; color: white;
+            border: 2px solid rgba(255,255,255,0.55);
+            padding: 15px 36px; border-radius: var(--radius-md); font-weight: 700;
+            font-size: 0.95rem; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 8px; transition: var(--transition);
+        }
+        .cta-section .btn-clear:hover { background: rgba(255,255,255,0.12); }
+
+        /* ── Footer ── */
+        footer {
+            background: #0f1a0f; color: rgba(255,255,255,0.7);
+            padding: 72px 0 0;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            padding-bottom: 56px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .footer-brand .footer-logo {
+            font-family: 'Outfit', sans-serif; font-size: 1.7rem; font-weight: 800;
+            color: white; text-decoration: none; display: block; margin-bottom: 14px;
+        }
+        .footer-brand .footer-logo span { color: var(--green); }
+        .footer-brand p {
+            font-size: 0.88rem; line-height: 1.7; color: rgba(255,255,255,0.55);
+            margin-bottom: 24px; max-width: 260px;
+        }
+        .footer-socials { display: flex; gap: 10px; }
+        .footer-social-btn {
+            width: 36px; height: 36px; border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.6); text-decoration: none;
+            transition: var(--transition);
+        }
+        .footer-social-btn:hover { background: var(--green); color: white; border-color: var(--green); }
+        .footer-col h4 {
+            font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: rgba(255,255,255,0.4);
+            margin-bottom: 18px;
+        }
+        .footer-col ul { list-style: none; }
+        .footer-col ul li { margin-bottom: 11px; }
+        .footer-col ul li a {
+            color: rgba(255,255,255,0.6); text-decoration: none;
+            font-size: 0.88rem; transition: var(--transition);
+        }
+        .footer-col ul li a:hover { color: var(--green); }
+        .footer-bottom {
+            padding: 20px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .footer-copy { font-size: 0.82rem; color: rgba(255,255,255,0.35); }
+        .footer-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 12px;
+            font-size: 0.75rem; color: rgba(255,255,255,0.5); font-weight: 600;
+        }
+        .footer-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+        /* ── Responsive ── */
+        @media (max-width: 992px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+            .hero-right { display: none; }
+            .hero-left { max-width: 100%; text-align: center; }
+            .hero-cta { justify-content: center; }
+            .hero-trust { justify-content: center; }
+            .hiw-steps { grid-template-columns: repeat(2, 1fr); gap: 36px; }
+            .hiw-step:not(:last-child)::after { display: none; }
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+        }
+        @media (max-width: 640px) {
+            .hero-split { padding: 100px 0 60px; }
+            .lp-nav-links .nav-link-text { display: none; }
+            .hiw-steps { grid-template-columns: 1fr; gap: 28px; }
+            .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+            .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 22px; }
+            .stat-item:last-child { border-bottom: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="lp-nav">
+        <div class="lp-nav-inner">
+            <a href="index.html" class="logo">Kazi<span>Mtaani</span></a>
+            <div class="lp-nav-links">
+                <a href="#how-it-works" class="nav-link-text">How It Works</a>
+                <a href="login.html">Log In</a>
+                <a href="register.html" class="btn-primary" style="padding:10px 22px; font-size:0.88rem;">Get Started Free</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO — SPLIT LAYOUT -->
+    <section class="hero-split">
+        <div class="container">
+            <div class="hero-grid">
+                <!-- LEFT: Copy -->
+                <div class="hero-left">
+                    <div class="hero-tag">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Built for Kenya
+                    </div>
+                    <h1 class="hero-h1">
+                        Find <span class="accent">Trusted Work</span><br>
+                        In Your <span class="underline-green">Neighborhood</span>
+                    </h1>
+                    <p class="hero-sub">
+                        Kenya's fastest-growing platform connecting skilled workers with employers. Every payment is protected by secure M-Pesa escrow.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="register.html?role=worker" class="btn-primary" style="padding:14px 32px; font-size:0.97rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            Find Kazi Now
+                        </a>
+                        <a href="register.html?role=employer" class="btn-outline" style="padding:14px 32px; font-size:0.97rem;">
+                            Post a Job
+                        </a>
+                    </div>
+                    <div class="hero-trust">
+                        <div class="hero-trust-item"><div class="hero-trust-dot"></div>Free to join</div>
+                        <div class="hero-trust-item"><div class="hero-trust-dot"></div>M-Pesa escrow on every job</div>
+                        <div class="hero-trust-item"><div class="hero-trust-dot"></div>No hidden fees</div>
+                        <div class="hero-trust-item"><div class="hero-trust-dot"></div>Works on any phone via USSD</div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Dashboard Mockup -->
+                <div class="hero-right">
+                    <!-- Floating: hired notification -->
+                    <div class="mock-notif">
+                        <div class="mock-notif-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div>
+                            <span class="mock-notif-label">You've been hired!</span>
+                            <span class="mock-notif-sub">Painting job in Westlands</span>
+                        </div>
+                    </div>
+
+                    <div class="mock-bg">
+                        <div class="mock-topbar">
+                            <div class="mock-dot" style="background:#ff5f57;"></div>
+                            <div class="mock-dot" style="background:#ffbd2e;"></div>
+                            <div class="mock-dot" style="background:#28c840;"></div>
+                            <span class="mock-topbar-title">Kazi Mtaani — Dashboard</span>
+                        </div>
+
+                        <!-- Job Card 1 -->
+                        <div class="mock-job">
+                            <div class="mock-job-top">
+                                <div>
+                                    <div class="mock-job-badges">
+                                        <span class="mock-pill mock-pill-blue">Technical</span>
+                                        <span class="mock-pill mock-pill-green">Open</span>
+                                    </div>
+                                    <div class="mock-job-title">Electrician Needed</div>
+                                    <div class="mock-job-meta">Westlands, Nairobi &nbsp;·&nbsp; Today</div>
+                                </div>
+                                <div class="mock-pay">KES 3,500<small>Fixed price</small></div>
+                            </div>
+                            <div class="mock-job-desc">Looking for a licensed electrician to fix wiring in a 3-bedroom house. Must have own tools.</div>
+                            <div class="mock-job-footer">
+                                <span class="mock-applicants">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    6 applicants
+                                </span>
+                                <button class="mock-btn-apply">Apply Now</button>
+                            </div>
+                        </div>
+
+                        <!-- Job Card 2 (muted) -->
+                        <div class="mock-job" style="opacity:0.55;">
+                            <div class="mock-job-top">
+                                <div>
+                                    <div class="mock-job-badges">
+                                        <span class="mock-pill mock-pill-green">Cleaning</span>
+                                    </div>
+                                    <div class="mock-job-title">House Cleaner — Karen</div>
+                                    <div class="mock-job-meta">Karen, Nairobi &nbsp;·&nbsp; 2 hrs ago</div>
+                                </div>
+                                <div class="mock-pay">KES 1,200<small>Fixed price</small></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating: new message -->
+                    <div class="mock-escrow">
+                        <div class="mock-escrow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div>
+                            <span class="mock-notif-label" style="color:#0d47a1;">New Message</span>
+                            <span class="mock-notif-sub">Employer: "When can you start?"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS BAR — animated counters -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-num" data-target="2400" data-suffix="+">2,400+</span>
+            <span class="stat-label">Active Workers</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="850" data-suffix="+">850+</span>
+            <span class="stat-label">Jobs Posted</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="4" data-prefix="KES " data-suffix="M+">KES 4M+</span>
+            <span class="stat-label">Paid via Escrow</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="47">47</span>
+            <span class="stat-label">Counties Covered</span>
+        </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <section class="categories-section">
+        <div class="container" style="text-align:center;">
+            <div class="section-label">Browse by Category</div>
+            <h2 class="section-title">Popular Job Categories</h2>
+            <p class="section-sub">From skilled trades to professional services — find or post any kind of work.</p>
+            <div class="category-grid">
+                <a href="register.html?role=worker&cat=plumbing" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    </div>
+                    <span class="cat-name">Plumbing</span>
+                    <span class="cat-count">Pipes &amp; Water</span>
+                </a>
+                <a href="register.html?role=worker&cat=cleaning" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4M19 17v4M3 5h4M17 19h4"/></svg>
+                    </div>
+                    <span class="cat-name">Cleaning</span>
+                    <span class="cat-count">Home &amp; Office</span>
+                </a>
+                <a href="register.html?role=worker&cat=transport" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect width="7" height="7" x="14" y="10" rx="1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                    </div>
+                    <span class="cat-name">Delivery</span>
+                    <span class="cat-count">Transport &amp; Errands</span>
+                </a>
+                <a href="register.html?role=worker&cat=technical" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <span class="cat-name">Electrical</span>
+                    <span class="cat-count">Wiring &amp; Repairs</span>
+                </a>
+                <a href="register.html?role=worker&cat=carpentry" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></svg>
+                    </div>
+                    <span class="cat-name">Carpentry</span>
+                    <span class="cat-count">Wood &amp; Furniture</span>
+                </a>
+                <a href="register.html?role=worker&cat=painting" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/><path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/><path d="M14.5 17.5 4.5 15"/></svg>
+                    </div>
+                    <span class="cat-name">Painting</span>
+                    <span class="cat-count">Interior &amp; Exterior</span>
+                </a>
+                <a href="register.html?role=worker&cat=security" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <span class="cat-name">Security</span>
+                    <span class="cat-count">Guard &amp; Watchman</span>
+                </a>
+                <a href="register.html?role=worker&cat=general" class="category-card">
+                    <div class="cat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    </div>
+                    <span class="cat-name">Tutoring</span>
+                    <span class="cat-count">Teaching &amp; Coaching</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+        <div class="container" style="text-align:center;">
+            <div class="section-label">Why Choose Us</div>
+            <h2 class="section-title">Everything You Need to Work Smarter</h2>
+            <p class="section-sub">From secure payments to in-app messaging and USSD access — Kazi Mtaani has you covered end to end.</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>M-Pesa Escrow Protection</h3>
+                    <p>Funds are secured before work starts and released only when the job is done. Zero risk for both parties.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <h3>Instant Job Matching</h3>
+                    <p>Post a job and get qualified applicants in minutes. Browse by category, location, and pay rate.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3>In-App Messaging</h3>
+                    <p>Employers and workers communicate directly in the platform — no need to share personal numbers before trust is established.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                    <h3>Verified Talent Profiles</h3>
+                    <p>Build a reputation with reviews and ratings. Employers see your full track record before hiring.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <h3>Neighborhood-First</h3>
+                    <p>Jobs near you. Support local community while earning — or saving on hiring costs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                    </div>
+                    <h3>Instant M-Pesa Payouts</h3>
+                    <p>Get paid directly to your M-Pesa the moment work is approved. No delays, no middlemen.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><path d="M12 16v-2"/></svg>
+                    </div>
+                    <h3>ID Verification Badge</h3>
+                    <p>Upload your National ID or Passport once and earn a verified badge. Employers trust verified workers more — and hire them faster.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    </div>
+                    <h3>Earnings &amp; Spend Reports</h3>
+                    <p>Workers track monthly income and job history. Employers see total spend, active jobs, and average worker ratings — all in one dashboard.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <h3>USSD on Any Phone</h3>
+                    <p>No smartphone? No problem. Dial <strong>*384#</strong> from any phone to browse open jobs, check applications, and view your profile — even on 2G.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="testimonials">
+        <div class="container" style="text-align:center;">
+            <div class="section-label">Real Stories</div>
+            <h2 class="section-title">Trusted by Kenyans Everywhere</h2>
+            <p class="section-sub">From Nairobi to Mombasa — workers and employers rely on Kazi Mtaani every day.</p>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                    <p class="testimonial-quote">"Found a reliable plumber in under 30 minutes. The M-Pesa escrow gave me total peace of mind — I only paid after the job was done perfectly."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#00c853,#00897b);">S</div>
+                        <div>
+                            <div class="testimonial-name">Sarah W.</div>
+                            <div class="testimonial-role">Employer &nbsp;·&nbsp; Westlands, Nairobi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                    <p class="testimonial-quote">"I've earned over KES 45,000 in just 3 months from jobs on Kazi Mtaani. Payments hit my M-Pesa instantly. This platform changed my life."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">J</div>
+                        <div>
+                            <div class="testimonial-name">James O.</div>
+                            <div class="testimonial-role">Electrician &nbsp;·&nbsp; Mombasa</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                    <p class="testimonial-quote">"Posted a cleaning job, had 6 applications by evening. Hired someone local, the work was excellent, and it cost half what an agency would charge."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#e65100,#f57c00);">G</div>
+                        <div>
+                            <div class="testimonial-name">Grace M.</div>
+                            <div class="testimonial-role">Employer &nbsp;·&nbsp; Kisumu</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS — Connected Timeline -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container" style="text-align:center;">
+            <div class="section-label">How It Works</div>
+            <h2 class="section-title">Up and Running in Minutes</h2>
+            <p class="section-sub">Whether you're looking for work or hiring — the whole process is simple and secure.</p>
+
+            <!-- Audience toggle -->
+            <div style="margin-top:32px;">
+                <div class="hiw-tabs">
+                    <button class="hiw-tab active" onclick="switchHIW('worker', this)">I'm a Worker</button>
+                    <button class="hiw-tab" onclick="switchHIW('employer', this)">I'm an Employer</button>
+                </div>
+            </div>
+
+            <!-- Worker steps -->
+            <div class="hiw-steps" id="hiwWorker">
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">1</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                    </div>
+                    <div class="hiw-title">Create Your Profile</div>
+                    <div class="hiw-desc">Sign up free with your phone number. Add your skills, location, and experience.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">2</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    </div>
+                    <div class="hiw-title">Browse Open Jobs</div>
+                    <div class="hiw-desc">Search by category, location, or pay rate. Apply to jobs that match your skills.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">3</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="hiw-title">Get Hired &amp; Message</div>
+                    <div class="hiw-desc">When selected, chat directly with the employer in-app to confirm job details — no number sharing needed.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">4</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                    </div>
+                    <div class="hiw-title">Get Paid via M-Pesa</div>
+                    <div class="hiw-desc">Payment is held in escrow and sent straight to your M-Pesa once the job is done.</div>
+                </div>
+            </div>
+
+            <!-- Employer steps (hidden by default) -->
+            <div class="hiw-steps" id="hiwEmployer" style="display:none;">
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">1</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    </div>
+                    <div class="hiw-title">Post a Job</div>
+                    <div class="hiw-desc">Describe the work, set your budget, and choose a category. It's free and takes 2 minutes.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">2</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="hiw-title">Review Applicants</div>
+                    <div class="hiw-desc">Workers apply directly. View profiles, ratings, and skills to find the best fit.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">3</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <div class="hiw-title">Fund Escrow via M-Pesa</div>
+                    <div class="hiw-desc">Once hired, pay the job amount into escrow. Funds are secured until work is complete.</div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-icon-wrap">
+                        <div class="hiw-step-num">4</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <div class="hiw-title">Approve &amp; Release</div>
+                    <div class="hiw-desc">Confirm the job is done and release payment. Rate the worker to help the community.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2>Start Earning or Hiring Today</h2>
+        <p>Join thousands of Kenyans already using Kazi Mtaani to find reliable work and trustworthy workers.</p>
+        <div class="cta-btns">
+            <a href="register.html?role=worker" class="btn-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Find Kazi Now
+            </a>
+            <a href="register.html?role=employer" class="btn-clear">
+                Post a Job — It's Free
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER — Multi-column dark -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Brand -->
+                <div class="footer-brand">
+                    <a href="index.html" class="footer-logo"><span>Kazi</span>Mtaani</a>
+                    <p>Kenya's trusted marketplace for local jobs and skilled workers. Secure M-Pesa escrow on every transaction.</p>
+                    <div class="footer-socials">
+                        <!-- Twitter/X -->
+                        <a href="#" class="footer-social-btn" aria-label="Twitter">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+                        </a>
+                        <!-- Facebook -->
+                        <a href="#" class="footer-social-btn" aria-label="Facebook">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                        </a>
+                        <!-- Instagram -->
+                        <a href="#" class="footer-social-btn" aria-label="Instagram">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                        </a>
+                        <!-- LinkedIn -->
+                        <a href="#" class="footer-social-btn" aria-label="LinkedIn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- For Workers -->
+                <div class="footer-col">
+                    <h4>For Workers</h4>
+                    <ul>
+                        <li><a href="register.html?role=worker">Browse Jobs</a></li>
+                        <li><a href="register.html?role=worker">Create Profile</a></li>
+                        <li><a href="#how-it-works">How to Get Hired</a></li>
+                        <li><a href="login.html">Worker Login</a></li>
+                        <li><a href="login.html">Get Verified (ID Upload)</a></li>
+                        <li><a href="#features">USSD Access (*384#)</a></li>
+                    </ul>
+                </div>
+
+                <!-- For Employers -->
+                <div class="footer-col">
+                    <h4>For Employers</h4>
+                    <ul>
+                        <li><a href="register.html?role=employer">Post a Job</a></li>
+                        <li><a href="register.html?role=employer">Find Workers</a></li>
+                        <li><a href="#how-it-works">How Escrow Works</a></li>
+                        <li><a href="login.html">Employer Login</a></li>
+                        <li><a href="login.html">View Reports &amp; Spend</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company -->
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Support</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bottom bar -->
+            <div class="footer-bottom">
+                <span class="footer-copy">© 2026 Kazi Mtaani. All rights reserved.</span>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <span class="footer-badge"><div class="footer-badge-dot"></div>M-Pesa Secured</span>
+                    <span class="footer-badge"><div class="footer-badge-dot"></div>USSD *384# Ready</span>
+                    <span class="footer-badge"><div class="footer-badge-dot"></div>Made in Kenya</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ── How It Works tab switcher ──
+        function switchHIW(type, btn) {
+            document.querySelectorAll('.hiw-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('hiwWorker').style.display   = type === 'worker'   ? 'grid' : 'none';
+            document.getElementById('hiwEmployer').style.display = type === 'employer' ? 'grid' : 'none';
+        }
+
+        // ── Animated stat counters ──
+        function animateCounter(el) {
+            const target   = parseInt(el.dataset.target, 10);
+            const prefix   = el.dataset.prefix  || '';
+            const suffix   = el.dataset.suffix  || '';
+            const duration = 1800;
+            const steps    = 60;
+            const increment = target / steps;
+            let current = 0;
+            const timer = setInterval(() => {
+                current = Math.min(current + increment, target);
+                el.textContent = prefix + Math.round(current).toLocaleString() + suffix;
+                if (current >= target) clearInterval(timer);
+            }, duration / steps);
+        }
+
+        // Trigger counters when stats bar enters viewport
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.querySelectorAll('[data-target]').forEach(animateCounter);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        const statsBar = document.querySelector('.stats-bar');
+        if (statsBar) observer.observe(statsBar);
+    </script>
+
+</body>
+</html>
