@@ -16,6 +16,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 }
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's reverse proxy for real client IPs
 
 // HTTPS redirect in production (assumes a reverse proxy sets x-forwarded-proto)
 if (process.env.NODE_ENV === 'production') {
@@ -59,7 +60,8 @@ const allowedOrigins = [
     'http://127.0.0.1:5000',
     'http://localhost:5500',      // VS Code Live Server
     'http://127.0.0.1:5500',     // VS Code Live Server (alternate)
-    'https://kazimtaani.co.ke'
+    'https://kazimtaani.co.ke',
+    'https://kazi-mtaani.onrender.com'  // Render deployment
 ];
 app.use(cors({
     origin: function (origin, callback) {
