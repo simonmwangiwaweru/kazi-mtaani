@@ -105,6 +105,14 @@ app.use('/uploads', require('express').static('uploads'));
 // Health-check — Render pings this to confirm the service is up
 app.get('/api/auth/health', (_req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
+// DB diagnostic — temporarily checks if mongoose is actually connected
+app.get('/api/auth/dbcheck', (_req, res) => {
+    const state = mongoose.connection.readyState;
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    res.json({ db: states[state] || 'unknown', state });
+});
+
 // 4. Routes
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/jobs',          require('./routes/jobs'));
