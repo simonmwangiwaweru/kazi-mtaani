@@ -5,9 +5,16 @@ const dotenv       = require('dotenv');
 const helmet       = require('helmet');
 const rateLimit    = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const fs           = require('fs');
+const path         = require('path');
 
 // 1. Load environment variables
 dotenv.config();
+
+// Ensure uploads directories exist (important on Render's ephemeral disk)
+['uploads/verification'].forEach(dir => {
+    fs.mkdirSync(path.join(__dirname, dir), { recursive: true });
+});
 
 // Guard: fail fast if critical secrets are missing or weak
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -94,6 +101,9 @@ mongoose.connect(mongoURI)
 
 // Serve uploaded verification documents (admin-only path in production)
 app.use('/uploads', require('express').static('uploads'));
+
+// Health-check — Render pings this to confirm the service is up
+app.get('/api/auth/health', (_req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
 // 4. Routes
 app.use('/api/auth',          require('./routes/auth'));
