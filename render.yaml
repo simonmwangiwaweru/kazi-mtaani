@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: kazi-mtaani
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/auth/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false          # Set manually in Render dashboard (contains password)
+      - key: JWT_SECRET
+        sync: false          # Set manually in Render dashboard
+      - key: GOOGLE_CLIENT_ID
+        sync: false          # Set manually in Render dashboard
+      - key: DARAJA_ENV
+        value: sandbox
+      - key: DARAJA_CONSUMER_KEY
+        sync: false
+      - key: DARAJA_CONSUMER_SECRET
+        sync: false
+      - key: DARAJA_SHORTCODE
+        value: "174379"
+      - key: DARAJA_PASSKEY
+        sync: false
+      - key: DARAJA_B2C_SHORTCODE
+        value: "600979"
+      - key: DARAJA_B2C_INITIATOR
+        value: testapi
+      - key: DARAJA_B2C_SECURITY_CREDENTIAL
+        sync: false
+      - key: CALLBACK_BASE_URL
+        sync: false          # Will be your Render URL: https://kazi-mtaani.onrender.com
+      - key: AT_USERNAME
+        value: sandbox
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USSD_CODE
+        value: "*384*123#"
