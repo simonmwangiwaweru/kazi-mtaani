@@ -71,7 +71,8 @@ const allowedOrigins = [
     'http://localhost:5500',      // VS Code Live Server
     'http://127.0.0.1:5500',     // VS Code Live Server (alternate)
     'https://kazimtaani.co.ke',
-    'https://kazi-mtaani.onrender.com'  // Render deployment
+    'https://kazi-mtaani.onrender.com',  // Render deployment
+    'https://accounts.google.com',       // Google redirect-mode POST origin
 ];
 app.use(cors({
     origin: function (origin, callback) {
