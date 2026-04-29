@@ -47,10 +47,12 @@ app.use(helmet({
             'script-src-attr': ["'unsafe-inline'"],
             styleSrc:    ["'self'", "https:", "'unsafe-inline'"],
             imgSrc:      ["'self'", "data:", "https:"],
-            connectSrc:  ["'self'"],
+            // Google Identity Services makes XHR calls back to accounts.google.com
+            connectSrc:  ["'self'", "https://accounts.google.com"],
             fontSrc:     ["'self'", "https:", "data:"],
             objectSrc:   ["'none'"],
-            frameSrc:    ["'none'"],
+            // Google renders its sign-in button inside an iframe on accounts.google.com
+            frameSrc:    ["https://accounts.google.com"],
             frameAncestors: ["'none'"],
             baseUri:     ["'self'"],
             formAction:  ["'self'"],
