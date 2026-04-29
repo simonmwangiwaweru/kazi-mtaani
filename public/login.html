@@ -160,25 +160,8 @@
             <!-- OR divider -->
             <div class="or-divider"><span>or continue with</span></div>
 
-            <!-- Google Sign-In Button natively rendered for reliable popups -->
-            <div style="display:flex; justify-content:center; margin-top:20px; width:100%;">
-                <div class="g_id_signin"
-                    data-type="standard"
-                    data-shape="pill"
-                    data-theme="outline"
-                    data-text="signin_with"
-                    data-size="large"
-                    data-logo_alignment="left"
-                    data-width="360">
-                </div>
-            </div>
-
-            <!-- Hidden Google Identity container (fires callback automatically) -->
-            <div id="g_id_onload"
-                data-client_id="670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com"
-                data-callback="handleGoogleCredential"
-                data-auto_prompt="false">
-            </div>
+            <!-- Google Sign-In Button — redirect mode (no popup/cookie issues) -->
+            <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-top:20px; width:100%;"></div>
 
             <p class="form-footer-text">
                 Don't have an account yet? <a href="register.html">Create one free</a>
@@ -261,36 +244,24 @@
         });
     }
 
-    // ── Google Sign-In ──
-    // Called by the Google SDK after the user picks their account.
-    // NOTE: We use the native Google-rendered button (g_id_signin div),
-    // so there is no custom button element to toggle — only status messages.
-    async function handleGoogleCredential(googleResponse) {
-        showStatus('success', '🔄 Verifying with Google…');
-
-        try {
-            const res  = await fetch('/api/auth/google', {
-                method:      'POST',
-                credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify({ googleToken: googleResponse.credential })
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                saveSession(data);
-                showStatus('success', '✅ Signed in with Google! Redirecting…');
-                setTimeout(() => window.location.href = 'dashboard.html', 1000);
-            } else if (res.status === 400 && data.msg && data.msg.includes('Phone number and role')) {
-                // First-time Google user — needs to complete profile on register page
-                showStatus('error', '📝 First time here! Please complete your profile.');
-                setTimeout(() => window.location.href = 'register.html?via=google&token=' + encodeURIComponent(googleResponse.credential), 1500);
-            } else {
-                showStatus('error', '❌ ' + (data.msg || 'Google sign-in failed.'));
-            }
-        } catch {
-            showStatus('error', '⚠️ Connection failed. Is the server running?');
-        }
+    // ── Google Sign-In (redirect mode — avoids Chrome third-party cookie block) ──
+    function initGoogleSignIn() {
+        google.accounts.id.initialize({
+            client_id: '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com',
+            ux_mode:   'redirect',
+            login_uri: window.location.origin + '/api/auth/google-redirect',
+        });
+        google.accounts.id.renderButton(
+            document.getElementById('googleBtnContainer'),
+            { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 360 }
+        );
+    }
+    // Initialise once the GSI library script has loaded
+    const gsiScript = document.querySelector('script[src*="accounts.google.com"]');
+    if (typeof google !== 'undefined' && google.accounts) {
+        initGoogleSignIn();
+    } else {
+        gsiScript.addEventListener('load', initGoogleSignIn);
     }
 
 

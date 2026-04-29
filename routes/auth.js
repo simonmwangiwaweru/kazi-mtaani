@@ -239,8 +239,43 @@ router.post('/google', authLimiter, async (req, res) => {
         res.status(500).json({ msg: 'Server error during Google auth.' });
     }
 });
+// @route   POST /api/auth/google-redirect
+// Called by Google in redirect-mode (ux_mode:'redirect') — credential arrives as form-encoded body.
+router.post('/google-redirect', authLimiter, async (req, res) => {
+    try {
+        const googleToken = req.body.credential;
+        if (!googleToken) return res.redirect('/login.html?error=google_failed');
 
-// @route   GET /api/auth/me  — fetch logged-in user's full profile
+        const ticket = await client.verifyIdToken({
+            idToken: googleToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { sub, email, name } = payload;
+
+        let user = await User.findOne({ $or: [{ googleId: sub }, { email }] });
+
+        if (user) {
+            if (!user.googleId) { user.googleId = sub; await user.save(); }
+            const token = generateToken(user);
+            setAuthCookie(res, token);
+            const u = Buffer.from(JSON.stringify({
+                name: user.name, role: user.role,
+                id: user._id.toString(), phone: user.phone || ''
+            })).toString('base64');
+            return res.redirect('/session-bridge.html?u=' + u + '&to=dashboard.html');
+        }
+
+        // New user — pass token to register page so they can provide phone & role
+        return res.redirect('/register.html?via=google&token=' + encodeURIComponent(googleToken));
+
+    } catch (err) {
+        console.error('Google Redirect Error:', err.message);
+        return res.redirect('/login.html?error=google_failed');
+    }
+});
+
+
 router.get('/me', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password -tokenVersion -googleId');
