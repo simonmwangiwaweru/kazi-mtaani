@@ -262,11 +262,10 @@
     }
 
     // ── Google Sign-In ──
-    // Called by the Google SDK after the user picks their account
+    // Called by the Google SDK after the user picks their account.
+    // NOTE: We use the native Google-rendered button (g_id_signin div),
+    // so there is no custom button element to toggle — only status messages.
     async function handleGoogleCredential(googleResponse) {
-        const btn = document.getElementById('googleSignInBtn');
-        btn.disabled    = true;
-        btn.textContent = 'Signing in…';
         showStatus('success', '🔄 Verifying with Google…');
 
         try {
@@ -288,9 +287,6 @@
                 setTimeout(() => window.location.href = 'register.html?via=google&token=' + encodeURIComponent(googleResponse.credential), 1500);
             } else {
                 showStatus('error', '❌ ' + (data.msg || 'Google sign-in failed.'));
-                btn.disabled    = false;
-                btn.textContent = 'Sign in with Google';
-                btn.innerHTML   = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Sign in with Google';
             }
         } catch {
             showStatus('error', '⚠️ Connection failed. Is the server running?');
