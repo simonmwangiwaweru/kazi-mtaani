@@ -239,25 +239,8 @@
             <!-- OR divider -->
             <div class="or-divider"><span>or sign up with</span></div>
 
-            <!-- Google Sign-Up Button natively rendered for reliable popups -->
-            <div style="display:flex; justify-content:center; margin-top:20px; width:100%;">
-                <div class="g_id_signin"
-                    data-type="standard"
-                    data-shape="pill"
-                    data-theme="outline"
-                    data-text="continue_with"
-                    data-size="large"
-                    data-logo_alignment="left"
-                    data-width="360">
-                </div>
-            </div>
-
-            <!-- Hidden Google Identity container -->
-            <div id="g_id_onload"
-                data-client_id="670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com"
-                data-callback="handleGoogleCredential"
-                data-auto_prompt="false">
-            </div>
+            <!-- Google Sign-Up Button — redirect mode (no popup/cookie issues) -->
+            <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-top:20px; width:100%;"></div>
 
             <!-- Step 2: Phone collection for new Google users -->
             <div id="googlePhoneStep">
@@ -411,10 +394,30 @@
         }
     });
 
-    // ── Google Sign-In / Sign-Up ──
+    // ── Google Sign-In (redirect mode — avoids Chrome third-party cookie block) ──
+    function initGoogleSignIn() {
+        google.accounts.id.initialize({
+            client_id: '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com',
+            ux_mode:   'redirect',
+            login_uri: window.location.origin + '/api/auth/google-redirect',
+        });
+        google.accounts.id.renderButton(
+            document.getElementById('googleBtnContainer'),
+            { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 360 }
+        );
+    }
+    const gsiScript = document.querySelector('script[src*="accounts.google.com"]');
+    if (typeof google !== 'undefined' && google.accounts) {
+        initGoogleSignIn();
+    } else {
+        gsiScript.addEventListener('load', initGoogleSignIn);
+    }
+
+    // ── Pending Google token (set from URL param when server redirects new user here) ──
     let _pendingGoogleToken = null;
 
-    // Check if user was redirected here from login.html with a Google token
+    // When server redirects a new Google user to register.html?via=google&token=...
+    // grab the token and show the phone-collection step immediately.
     window.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('via') === 'google' && params.get('token')) {
@@ -422,39 +425,6 @@
             showGooglePhoneStep();
         }
     });
-
-    // Called by Google SDK after the user picks a Google account
-    async function handleGoogleCredential(googleResponse) {
-        _pendingGoogleToken = googleResponse.credential;
-        showStatus('success', '🔄 Verified with Google! Checking account…');
-
-        // First, try to log in (existing user)
-        try {
-            const res  = await fetch('/api/auth/google', {
-                method:      'POST',
-                credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify({ googleToken: _pendingGoogleToken })
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                // Existing user — redirect to dashboard
-                saveSession(data);
-                showStatus('success', '✅ Welcome back! Redirecting…');
-                setTimeout(() => window.location.href = 'dashboard.html', 1000);
-            } else if (res.status === 400 && data.msg && data.msg.includes('Phone number and role')) {
-                // New Google user — show phone collection step
-                showStatus('', '');
-                document.getElementById('statusMsg').style.display = 'none';
-                showGooglePhoneStep();
-            } else {
-                showStatus('error', '❌ ' + (data.msg || 'Google verification failed.'));
-            }
-        } catch {
-            showStatus('error', '⚠️ Connection failed. Is the server running?');
-        }
-    }
 
     function showGooglePhoneStep() {
         document.getElementById('googlePhoneStep').style.display = 'block';
