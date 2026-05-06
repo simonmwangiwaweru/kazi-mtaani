@@ -43,19 +43,20 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc:  ["'self'"],
-            scriptSrc:   ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+            scriptSrc:   ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"],
             'script-src-attr': ["'unsafe-inline'"],
             styleSrc:    ["'self'", "https:", "'unsafe-inline'"],
             imgSrc:      ["'self'", "data:", "https:"],
             // Google Identity Services makes XHR calls back to accounts.google.com
-            connectSrc:  ["'self'", "https://accounts.google.com"],
+            connectSrc:  ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
             fontSrc:     ["'self'", "https:", "data:"],
             objectSrc:   ["'none'"],
             // Google renders its sign-in button inside an iframe on accounts.google.com
             frameSrc:    ["https://accounts.google.com"],
             frameAncestors: ["'none'"],
             baseUri:     ["'self'"],
-            formAction:  ["'self'"],
+            // Allow Google's redirect-mode to POST the credential back to our server
+            formAction:  ["'self'", "https://accounts.google.com"],
         }
     }
 }));

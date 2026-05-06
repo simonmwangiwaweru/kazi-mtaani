@@ -1,5 +1,6 @@
 const express = require('express');
 const router  = express.Router();
+const crypto  = require('crypto');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -9,6 +10,32 @@ const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { sendSMS } = require('../services/sms');
 const AuditLog = require('../models/AuditLog');
+
+// ---------------------------------------------------------------------------
+// In-memory store for pending Google sign-ups (new users who need phone+role).
+// Key  : random 32-byte hex string, valid for 5 minutes.
+// Value: { name, email, googleId, expiresAt }
+// ---------------------------------------------------------------------------
+const pendingGoogleRegs = new Map();
+const PENDING_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function storePendingGoogle(name, email, googleId) {
+    const key = crypto.randomBytes(32).toString('hex');
+    pendingGoogleRegs.set(key, { name, email, googleId, expiresAt: Date.now() + PENDING_TTL_MS });
+    // Lazy cleanup — remove expired entries whenever a new one is added
+    for (const [k, v] of pendingGoogleRegs) {
+        if (v.expiresAt < Date.now()) pendingGoogleRegs.delete(k);
+    }
+    return key;
+}
+
+function consumePendingGoogle(key) {
+    const entry = pendingGoogleRegs.get(key);
+    if (!entry) return null;
+    pendingGoogleRegs.delete(key);
+    if (entry.expiresAt < Date.now()) return null; // expired
+    return entry;
+}
 
 function audit(userId, userName, action, req) {
     const ip = (req?.header('x-forwarded-for') || req?.ip || '').split(',')[0].trim();
@@ -164,35 +191,35 @@ router.post('/logout', protect, async (req, res) => {
     }
 });
 
-// @route   POST /api/auth/google
-router.post('/google', authLimiter, async (req, res) => {
+// @route   POST /api/auth/google-complete
+// Called by register.html after a new Google user provides their phone & role.
+// Accepts a short-lived pendingKey (stored server-side) instead of the raw id_token.
+router.post('/google-complete', authLimiter, async (req, res) => {
     try {
-        const { googleToken, phone, role } = req.body;
-        
-        if (!googleToken) {
-            return res.status(400).json({ msg: 'Google token is required.' });
+        const { pendingKey, phone, role } = req.body;
+
+        if (!pendingKey) return res.status(400).json({ msg: 'Invalid or expired Google session. Please try again.' });
+
+        const pending = consumePendingGoogle(pendingKey);
+        if (!pending) return res.status(400).json({ msg: 'Google session expired or already used. Please sign in with Google again.' });
+
+        const { name, email, googleId } = pending;
+
+        if (!phone || !role) {
+            return res.status(400).json({ msg: 'Phone number and role are required.' });
         }
 
-        const ticket = await client.verifyIdToken({
-            idToken: googleToken,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        const { sub, email, name } = payload;
-        
-        // Check if user already exists
-        let user = await User.findOne({ 
-            $or: [{ googleId: sub }, { email: email }]
-        });
+        let safeRole = 'worker';
+        if (role === 'employer') safeRole = 'employer';
 
+        // Check for existing account
+        let user = await User.findOne({ $or: [{ googleId }, { email }] });
         if (user) {
-            // Link googleId if not linked yet
-            if (!user.googleId) {
-                user.googleId = sub;
-                await user.save();
-            }
+            // Already registered — just log them in
+            if (!user.googleId) { user.googleId = googleId; await user.save(); }
             const token = generateToken(user);
             setAuthCookie(res, token);
+            audit(user._id, user.name, 'google-login', req);
             return res.json({
                 msg: 'Login successful!',
                 token,
@@ -200,45 +227,96 @@ router.post('/google', authLimiter, async (req, res) => {
             });
         }
 
-        // New user Registration via Google
-        if (!phone || !role) {
-            // We require a phone and role for first-time Google signups
-            return res.status(400).json({ msg: 'Phone number and role are required for first-time Google signup.' });
-        }
+        // Normalise phone
+        const normPhone = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+        const existingPhone = await User.findOne({ phone: normPhone });
+        if (existingPhone) return res.status(400).json({ msg: 'Phone number is already associated with an account.' });
 
-        let safeRole = 'worker';
-        if (role === 'employer') safeRole = 'employer';
-
-        // Check if phone is already taken by a non-Google account
-        const existingPhone = await User.findOne({ phone });
-        if (existingPhone) {
-            return res.status(400).json({ msg: 'Phone number is already associated with an account.' });
-        }
-
-        // Password is not required because googleId is provided
-        user = new User({
-            name,
-            email,
-            phone,
-            googleId: sub,
-            role: safeRole
-        });
-        
+        user = new User({ name, email, phone: normPhone, googleId, role: safeRole });
         await user.save();
         const token = generateToken(user);
         setAuthCookie(res, token);
+        audit(user._id, user.name, 'google-register', req);
 
         return res.status(201).json({
-            msg: 'User registered successfully via Google!',
+            msg: 'Account created successfully via Google!',
             token,
             user: { id: user._id, name: user.name, role: user.role, phone: user.phone, email: user.email }
         });
 
     } catch (err) {
-        console.error('Google Auth Error:', err.message);
-        res.status(500).json({ msg: 'Server error during Google auth.' });
+        console.error('Google Complete Error:', err.message);
+        res.status(500).json({ msg: 'Server error. Please try again.' });
     }
 });
+
+// @route   GET /api/auth/google-redirect-init
+// Traditional OAuth2 redirect — fallback when GSI button fails to render.
+// Sends user to Google's consent page; Google then POSTs back to /google-callback.
+router.get('/google-redirect-init', (req, res) => {
+    const redirectUri = process.env.NODE_ENV === 'production'
+        ? 'https://kazi-mtaani.onrender.com/api/auth/google-callback'
+        : `http://localhost:${process.env.PORT || 5000}/api/auth/google-callback`;
+
+    const authUrl = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri)
+        .generateAuthUrl({
+            access_type: 'offline',
+            scope: ['openid', 'email', 'profile'],
+            prompt: 'select_account',
+        });
+    res.redirect(authUrl);
+});
+
+// @route   GET /api/auth/google-callback
+// Traditional OAuth2 callback — receives 'code' from Google and exchanges it for user info.
+router.get('/google-callback', authLimiter, async (req, res) => {
+    try {
+        const { code, error } = req.query;
+        if (error || !code) return res.redirect('/login.html?error=google_failed');
+
+        const redirectUri = process.env.NODE_ENV === 'production'
+            ? 'https://kazi-mtaani.onrender.com/api/auth/google-callback'
+            : `http://localhost:${process.env.PORT || 5000}/api/auth/google-callback`;
+
+        const oauthClient = new OAuth2Client(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            redirectUri
+        );
+        const { tokens } = await oauthClient.getToken(code);
+        oauthClient.setCredentials(tokens);
+
+        const ticket = await oauthClient.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { sub, email, name } = payload;
+
+        let user = await User.findOne({ $or: [{ googleId: sub }, { email }] });
+
+        if (user) {
+            if (!user.googleId) { user.googleId = sub; await user.save(); }
+            const token = generateToken(user);
+            setAuthCookie(res, token);
+            audit(user._id, user.name, 'google-login', req);
+            const u = Buffer.from(JSON.stringify({
+                name: user.name, role: user.role,
+                id: user._id.toString(), phone: user.phone || ''
+            })).toString('base64');
+            return res.redirect('/session-bridge.html?u=' + u + '&to=dashboard.html');
+        }
+
+        // New user — store info server-side, redirect with a short-lived key only
+        const pendingKey = storePendingGoogle(name, email, sub);
+        return res.redirect('/register.html?via=google&pk=' + pendingKey);
+
+    } catch (err) {
+        console.error('Google Callback Error:', err.message);
+        return res.redirect('/login.html?error=google_failed');
+    }
+});
+
 // @route   POST /api/auth/google-redirect
 // Called by Google in redirect-mode (ux_mode:'redirect') — credential arrives as form-encoded body.
 router.post('/google-redirect', authLimiter, async (req, res) => {
@@ -259,6 +337,7 @@ router.post('/google-redirect', authLimiter, async (req, res) => {
             if (!user.googleId) { user.googleId = sub; await user.save(); }
             const token = generateToken(user);
             setAuthCookie(res, token);
+            audit(user._id, user.name, 'google-login', req);
             const u = Buffer.from(JSON.stringify({
                 name: user.name, role: user.role,
                 id: user._id.toString(), phone: user.phone || ''
@@ -266,8 +345,9 @@ router.post('/google-redirect', authLimiter, async (req, res) => {
             return res.redirect('/session-bridge.html?u=' + u + '&to=dashboard.html');
         }
 
-        // New user — pass token to register page so they can provide phone & role
-        return res.redirect('/register.html?via=google&token=' + encodeURIComponent(googleToken));
+        // New user — store info server-side, redirect with a short-lived key only
+        const pendingKey = storePendingGoogle(name, email, sub);
+        return res.redirect('/register.html?via=google&pk=' + pendingKey);
 
     } catch (err) {
         console.error('Google Redirect Error:', err.message);
