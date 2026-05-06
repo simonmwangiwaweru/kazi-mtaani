@@ -89,9 +89,21 @@
 
         /* Phone step for new Google users */
         #googlePhoneStep {
-            display:none; margin-top:20px; padding:20px; background:var(--off-white);
+            display:none; margin-top:20px; padding:24px; background:var(--off-white);
             border:1.5px solid var(--green-mid); border-radius:var(--radius-md); animation:slideUp 0.3s ease-out;
         }
+        #googlePhoneStep .google-user-info {
+            display:flex; align-items:center; gap:12px; margin-bottom:16px;
+            padding:12px 14px; background:white; border-radius:var(--radius-md);
+            border:1px solid var(--border);
+        }
+        #googlePhoneStep .google-user-info .avatar {
+            width:40px; height:40px; border-radius:50%; background:var(--green);
+            display:flex; align-items:center; justify-content:center;
+            color:white; font-weight:700; font-size:1rem; flex-shrink:0;
+        }
+        #googlePhoneStep .google-user-info .uname { font-weight:600; font-size:0.93rem; color:var(--text-primary); }
+        #googlePhoneStep .google-user-info .uemail { font-size:0.8rem; color:var(--text-secondary); }
         #googlePhoneStep h3 { font-size:1rem; color:var(--text-primary); margin-bottom:6px; }
         #googlePhoneStep p  { font-size:0.85rem; color:var(--text-secondary); margin-bottom:14px; }
         #statusMsg { display:none; margin-top:14px; }
@@ -240,16 +252,32 @@
             <div class="or-divider"><span>or sign up with</span></div>
 
             <!-- Google Sign-Up Button — redirect mode (no popup/cookie issues) -->
-            <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-top:20px; width:100%;"></div>
+            <div id="googleBtnContainer" style="display:flex; justify-content:center; margin-top:8px; width:100%; min-height:44px;"></div>
+            <!-- Fallback button shown while GSI loads or if it fails -->
+            <a id="googleFallbackBtn" href="/api/auth/google-redirect-init"
+               style="display:flex; align-items:center; justify-content:center; gap:12px; width:100%;
+                      padding:13px 20px; border:1.5px solid #dadce0; border-radius:50px; margin-top:8px;
+                      background:#fff; color:#3c4043; font-size:0.95rem; font-weight:600;
+                      text-decoration:none; transition:box-shadow 0.2s, background 0.2s; font-family:'Inter',sans-serif;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20" alt="Google">
+                Continue with Google
+            </a>
 
             <!-- Step 2: Phone collection for new Google users -->
             <div id="googlePhoneStep">
-                <h3>📞 One more step!</h3>
-                <p>We need your Kenyan phone number for M-Pesa payments.</p>
+                <h3>📞 Almost done!</h3>
+                <div id="googleUserInfo" class="google-user-info" style="display:none">
+                    <div class="avatar" id="googleAvatar">?</div>
+                    <div>
+                        <div class="uname" id="googleUserName"></div>
+                        <div class="uemail" id="googleUserEmail"></div>
+                    </div>
+                </div>
+                <p>We need your Kenyan phone number to enable M-Pesa payments.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                     <div class="input-wrapper">
                         <span class="input-icon">📞</span>
-                        <input type="text" id="googlePhone" class="glass-input" placeholder="e.g. 0712 345 678">
+                        <input type="text" id="googlePhone" class="glass-input" placeholder="e.g. 0712 345 678" inputmode="numeric">
                     </div>
                 </div>
                 <button class="btn-primary w-full" onclick="completeGoogleRegistration()" id="completeGoogleBtn" style="padding:12px;">
@@ -395,34 +423,49 @@
     });
 
     // ── Google Sign-In (redirect mode — avoids Chrome third-party cookie block) ──
+    // login_uri MUST exactly match an Authorized Redirect URI in Google Cloud Console
+    const GOOGLE_CLIENT_ID = '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com';
+    const LOGIN_URI = 'https://kazi-mtaani.onrender.com/api/auth/google-redirect';
+
     function initGoogleSignIn() {
+        if (typeof google === 'undefined' || !google.accounts) return;
         google.accounts.id.initialize({
-            client_id: '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com',
+            client_id: GOOGLE_CLIENT_ID,
             ux_mode:   'redirect',
-            login_uri: window.location.origin + '/api/auth/google-redirect',
+            login_uri:  LOGIN_URI,
         });
-        google.accounts.id.renderButton(
-            document.getElementById('googleBtnContainer'),
-            { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 360 }
-        );
+        const container = document.getElementById('googleBtnContainer');
+        google.accounts.id.renderButton(container, {
+            theme: 'outline', size: 'large', shape: 'pill',
+            text: 'continue_with', width: Math.min(360, container.offsetWidth || 360)
+        });
+        // Hide the fallback button once the real GSI button is rendered
+        document.getElementById('googleFallbackBtn').style.display = 'none';
     }
-    const gsiScript = document.querySelector('script[src*="accounts.google.com"]');
+
+    // Try immediately (script may already be loaded), then listen for load event
     if (typeof google !== 'undefined' && google.accounts) {
         initGoogleSignIn();
     } else {
-        gsiScript.addEventListener('load', initGoogleSignIn);
+        const gsiScript = document.querySelector('script[src*="accounts.google.com"]');
+        if (gsiScript) gsiScript.addEventListener('load', initGoogleSignIn);
+        // Also try after a short delay as a belt-and-suspenders fallback
+        setTimeout(() => { if (typeof google !== 'undefined' && google.accounts) initGoogleSignIn(); }, 2000);
     }
 
-    // ── Pending Google token (set from URL param when server redirects new user here) ──
-    let _pendingGoogleToken = null;
+    // ── Pending Google key (stored server-side; only key is passed in URL) ──
+    let _pendingGoogleKey = null;
 
-    // When server redirects a new Google user to register.html?via=google&token=...
-    // grab the token and show the phone-collection step immediately.
+    // When server redirects a new Google user to register.html?via=google&pk=...
+    // grab the key and show the phone-collection step immediately.
     window.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('via') === 'google' && params.get('token')) {
-            _pendingGoogleToken = params.get('token');
+        if (params.get('via') === 'google' && params.get('pk')) {
+            _pendingGoogleKey = params.get('pk');
+            // Scroll the form into view & show step
             showGooglePhoneStep();
+            // Clean the URL so the key isn't bookmarked / shared
+            history.replaceState(null, '', '/register.html?via=google');
         }
     });
 
@@ -433,11 +476,20 @@
 
     // Complete Google registration with phone number
     async function completeGoogleRegistration() {
-        if (!_pendingGoogleToken) return;
+        if (!_pendingGoogleKey) {
+            showStatus('error', '⚠️ Google session lost. Please click "Continue with Google" again.');
+            return;
+        }
 
         let phone = document.getElementById('googlePhone').value.trim();
         if (!phone) { showStatus('error', '⚠️ Please enter your phone number.'); return; }
         if (phone.startsWith('0')) phone = '254' + phone.substring(1);
+
+        // Basic Kenyan phone check
+        if (!/^254[0-9]{9}$/.test(phone)) {
+            showStatus('error', '⚠️ Please enter a valid Kenyan phone number (e.g. 0712 345 678).');
+            return;
+        }
 
         const role = document.querySelector('input[name="regRole"]:checked').value;
         const btn  = document.getElementById('completeGoogleBtn');
@@ -445,25 +497,27 @@
         btn.textContent = 'Registering…';
 
         try {
-            const res  = await fetch('/api/auth/google', {
+            const res  = await fetch('/api/auth/google-complete', {
                 method:      'POST',
                 credentials: 'include',
                 headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify({ googleToken: _pendingGoogleToken, phone, role })
+                body:        JSON.stringify({ pendingKey: _pendingGoogleKey, phone, role })
             });
             const data = await res.json();
 
             if (res.ok) {
                 saveSession(data);
-                showStatus('success', '✅ Account created with Google! Redirecting…');
+                showStatus('success', '✅ Account created! Redirecting to your dashboard…');
                 setTimeout(() => window.location.href = 'dashboard.html', 1000);
             } else {
                 showStatus('error', '❌ ' + (data.msg || 'Registration failed.'));
                 btn.disabled    = false;
                 btn.textContent = 'Complete Registration';
+                // If the key expired, reset so they can start again
+                if (data.msg && data.msg.includes('expired')) _pendingGoogleKey = null;
             }
         } catch {
-            showStatus('error', '⚠️ Connection failed.');
+            showStatus('error', '⚠️ Connection failed. Please check your connection.');
             btn.disabled    = false;
             btn.textContent = 'Complete Registration';
         }
