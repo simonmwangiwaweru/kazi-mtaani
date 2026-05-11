@@ -22,6 +22,12 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     process.exit(1);
 }
 
+// Guard: fail fast if Google OAuth credentials are missing
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error('❌ FATAL: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for Google Sign-In.');
+    process.exit(1);
+}
+
 const app = express();
 app.set('trust proxy', 1); // Trust Render's reverse proxy for real client IPs
 
