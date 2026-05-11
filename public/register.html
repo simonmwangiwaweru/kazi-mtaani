@@ -424,8 +424,9 @@
 
     // ── Google Sign-In (redirect mode — avoids Chrome third-party cookie block) ──
     // login_uri MUST exactly match an Authorized Redirect URI in Google Cloud Console
-    const GOOGLE_CLIENT_ID = '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com';
-    const LOGIN_URI = 'https://kazi-mtaani.onrender.com/api/auth/google-redirect';
+     const GOOGLE_CLIENT_ID = '670688591906-sc2g6mis6c2b387vv80d69kn3dp5fvvh.apps.googleusercontent.com';
+     // Use relative URL for login_uri - works for both localhost and production
+     const LOGIN_URI = window.location.origin + '/api/auth/google-redirect';
 
     function initGoogleSignIn() {
         if (typeof google === 'undefined' || !google.accounts) return;
