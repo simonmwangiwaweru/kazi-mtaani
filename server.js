@@ -22,10 +22,17 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     process.exit(1);
 }
 
-// Guard: fail fast if Google OAuth credentials are missing
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    console.error('❌ FATAL: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for Google Sign-In.');
-    process.exit(1);
+// Guard: fail fast if Google OAuth credentials are missing (production only)
+if (process.env.NODE_ENV === 'production') {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET ||
+        process.env.GOOGLE_CLIENT_SECRET === 'your_google_client_secret_here') {
+        console.error('❌ FATAL: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for Google Sign-In.');
+        process.exit(1);
+    }
+} else {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        console.warn('⚠️  Google OAuth credentials not set — Google Sign-In will be unavailable locally.');
+    }
 }
 
 const app = express();
@@ -137,7 +144,16 @@ app.use('/api/audit',         require('./routes/audit'));
 app.use('/api/verify',        require('./routes/verify'));
 app.use('/api/ussd',          require('./routes/ussd'));
 
-// 5. Start Server
+// 5. Global error handler — prevents raw "Internal Server Error" pages
+app.use((err, req, res, next) => {
+    console.error('Unhandled server error:', err.stack || err.message);
+    if (res.headersSent) return next(err);
+    const isJson = req.xhr || (req.headers.accept || '').includes('application/json');
+    if (isJson) return res.status(err.status || 500).json({ msg: err.message || 'Server error.' });
+    return res.redirect('/login.html?error=server_error');
+});
+
+// 6. Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

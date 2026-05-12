@@ -350,8 +350,8 @@ router.post('/google-redirect', authLimiter, async (req, res) => {
         return res.redirect('/register.html?via=google&pk=' + pendingKey);
 
     } catch (err) {
-        console.error('Google Redirect Error:', err.message);
-        return res.redirect('/login.html?error=google_failed');
+        console.error('Google Redirect Error:', err.stack || err.message);
+        if (!res.headersSent) return res.redirect('/login.html?error=google_failed');
     }
 });
 
