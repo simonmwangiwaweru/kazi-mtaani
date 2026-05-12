@@ -22,17 +22,9 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     process.exit(1);
 }
 
-// Guard: fail fast if Google OAuth credentials are missing (production only)
-if (process.env.NODE_ENV === 'production') {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET ||
-        process.env.GOOGLE_CLIENT_SECRET === 'your_google_client_secret_here') {
-        console.error('❌ FATAL: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for Google Sign-In.');
-        process.exit(1);
-    }
-} else {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        console.warn('⚠️  Google OAuth credentials not set — Google Sign-In will be unavailable locally.');
-    }
+// Warn if Google OAuth credentials are missing
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.warn('⚠️  Google OAuth credentials not set — Google Sign-In will be unavailable.');
 }
 
 const app = express();
