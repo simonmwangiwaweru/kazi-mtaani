@@ -2,23 +2,30 @@
  * USSD — Africa's Talking USSD gateway for feature-phone users.
  *
  * Session text format (AT accumulates selections separated by *):
- *   ""          → main menu
- *   "1"         → View Jobs
- *   "1*1"       → First job detail
- *   "1*1*1"     → Apply for first job
- *   "2"         → My Applications
- *   "3"         → My Profile
- *   "4"         → Register prompt (if unknown phone)
+ *   ""              → main menu
  *
- * Env: AT_USSD_CODE — the shortcode/string registered in AT dashboard (e.g. *384*123#)
+ * Unregistered user flow:
+ *   ""              → welcome + register option
+ *   "1"             → ask full name
+ *   "1*{name}"      → ask role (worker / employer)
+ *   "1*{name}*1|2"  → create account → END
+ *
+ * Registered user flow:
+ *   "1"             → Browse Jobs
+ *   "1*N"           → Job detail
+ *   "1*N*1"         → Apply for job
+ *   "2"             → My Applications
+ *   "3"             → My Profile
+ *   "0"             → Exit
  */
-const express = require('express');
-const router  = express.Router();
-const User    = require('../models/user');
-const Job     = require('../models/job');
-const { createNotification } = require('./notifications');
+const express  = require('express');
+const router   = express.Router();
+const User     = require('../models/user');
+const Job      = require('../models/job');
+const { sendSMS }              = require('../services/sms');
+const { createNotification }   = require('./notifications');
 
-const MAX_JOBS = 3;  // jobs to list in USSD view
+const MAX_JOBS = 3;
 
 // POST /api/ussd — AT sends a form-urlencoded POST
 router.post('/', async (req, res) => {
@@ -29,18 +36,20 @@ router.post('/', async (req, res) => {
         ? phoneNumber.replace(/^\+/, '').replace(/^0/, '254')
         : '';
 
-    const parts  = text.split('*').map(p => p.trim());
-    const level  = parts.filter(p => p !== '').length;
-    const last   = parts[parts.length - 1];
+    const parts = text.split('*').map(p => p.trim());
+    const level = parts.filter(p => p !== '').length;
+    const last  = parts[parts.length - 1];
 
     let response = '';
 
     try {
+        // Single user lookup reused across all branches
+        const user = await User.findOne({ phone });
+
         // ── Level 0: Main menu ───────────────────────────────────────────────
         if (text === '') {
-            const user = await User.findOne({ phone });
             if (!user) {
-                response = `CON Welcome to KaziMtaani!\nYou are not registered.\nVisit kazimtaani.co.ke to create an account.\n\n0. Exit`;
+                response = `CON Welcome to KaziMtaani!\nYou are not registered.\n1. Register now\n0. Exit`;
             } else {
                 const greeting = user.name.split(' ')[0];
                 response = `CON Welcome, ${greeting}!\n1. Browse Jobs\n2. My Applications\n3. My Profile\n0. Exit`;
@@ -52,8 +61,54 @@ router.post('/', async (req, res) => {
             response = `END Thank you for using KaziMtaani. Kwaheri!`;
         }
 
+        // ════════════════════════════════════════════════════════════════════
+        // REGISTRATION FLOW (unregistered users)
+        // ════════════════════════════════════════════════════════════════════
+
+        // Step 1 — ask for full name
+        else if (parts[0] === '1' && level === 1 && !user) {
+            response = `CON Enter your full name:`;
+        }
+
+        // Step 2 — ask for role
+        else if (parts[0] === '1' && level === 2 && !user) {
+            const name = parts[1];
+            if (!name || name.length < 2) {
+                response = `CON Name is too short. Enter your full name:`;
+            } else {
+                response = `CON Hi ${name.split(' ')[0]}!\nSelect your role:\n1. Worker (find jobs)\n2. Employer (post jobs)`;
+            }
+        }
+
+        // Step 3 — create account
+        else if (parts[0] === '1' && level === 3 && !user && (parts[2] === '1' || parts[2] === '2')) {
+            const name = parts[1];
+            const role = parts[2] === '1' ? 'worker' : 'employer';
+            const tempPassword = phone.slice(-6); // last 6 digits as temporary password
+
+            await User.create({ name, phone, role, password: tempPassword, tokenVersion: 0 });
+
+            // Notify them of the temp password via SMS
+            await sendSMS(
+                phone,
+                `Welcome to KaziMtaani, ${name.split(' ')[0]}! Your account is ready. ` +
+                `Temp password: ${tempPassword}. Login & update it at kazimtaani.co.ke`
+            );
+
+            response = `END Welcome ${name.split(' ')[0]}! Registered as a ${role}.\nTemp password: ${tempPassword}\nDial *384*30173# to get started.\nUpdate your profile at kazimtaani.co.ke`;
+        }
+
+        // Invalid role selection during registration
+        else if (parts[0] === '1' && level === 3 && !user) {
+            response = `CON Invalid choice.\nSelect your role:\n1. Worker\n2. Employer`;
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // REGISTERED USER FLOWS
+        // ════════════════════════════════════════════════════════════════════
+
         // ── 1: Browse Jobs ───────────────────────────────────────────────────
-        else if (parts[0] === '1' && level === 1) {
+        else if (parts[0] === '1' && level === 1 && user) {
             const jobs = await Job.find({ status: 'Open' })
                 .sort({ createdAt: -1 })
                 .limit(MAX_JOBS)
@@ -71,7 +126,7 @@ router.post('/', async (req, res) => {
         }
 
         // ── 1*N: Job detail ──────────────────────────────────────────────────
-        else if (parts[0] === '1' && level === 2 && parts[1] !== '0') {
+        else if (parts[0] === '1' && level === 2 && parts[1] !== '0' && user) {
             const idx  = parseInt(parts[1]) - 1;
             const jobs = await Job.find({ status: 'Open' }).sort({ createdAt: -1 }).limit(MAX_JOBS).lean();
             const job  = jobs[idx];
@@ -83,22 +138,19 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // ── 1*N*0: Back from job detail ──────────────────────────────────────
+        // ── 1*0: Back to main menu ───────────────────────────────────────────
         else if (parts[0] === '1' && level === 2 && parts[1] === '0') {
-            response = `CON Welcome to KaziMtaani!\n1. Browse Jobs\n2. My Applications\n3. My Profile\n0. Exit`;
+            const greeting = user ? user.name.split(' ')[0] : 'there';
+            response = `CON Welcome, ${greeting}!\n1. Browse Jobs\n2. My Applications\n3. My Profile\n0. Exit`;
         }
 
         // ── 1*N*1: Apply for job ─────────────────────────────────────────────
-        else if (parts[0] === '1' && level === 3 && parts[2] === '1') {
+        else if (parts[0] === '1' && level === 3 && parts[2] === '1' && user) {
             const idx  = parseInt(parts[1]) - 1;
             const jobs = await Job.find({ status: 'Open' }).sort({ createdAt: -1 }).limit(MAX_JOBS).lean();
             const job  = jobs[idx];
 
-            const user = await User.findOne({ phone });
-
-            if (!user) {
-                response = `END You must register on kazimtaani.co.ke to apply.`;
-            } else if (!job) {
+            if (!job) {
                 response = `END Invalid job.`;
             } else if (job.applicants?.includes(user.name)) {
                 response = `END You already applied for this job.`;
@@ -117,16 +169,15 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // ── 1*N*0: Back ──────────────────────────────────────────────────────
+        // ── 1*N*0: Back to job list ──────────────────────────────────────────
         else if (parts[0] === '1' && level === 3 && parts[2] === '0') {
-            response = `CON Open Jobs:\n0. Back`;  // simplified — real state would re-list
+            response = `CON Open Jobs:\n0. Back`;
         }
 
         // ── 2: My Applications ───────────────────────────────────────────────
         else if (parts[0] === '2' && level === 1) {
-            const user = await User.findOne({ phone });
             if (!user) {
-                response = `END Register at kazimtaani.co.ke to track applications.`;
+                response = `END Register first. Dial again and choose Register.`;
             } else {
                 const jobs = await Job.find({ applicants: user.name })
                     .sort({ createdAt: -1 })
@@ -148,19 +199,17 @@ router.post('/', async (req, res) => {
 
         // ── 3: My Profile ────────────────────────────────────────────────────
         else if (parts[0] === '3' && level === 1) {
-            const user = await User.findOne({ phone });
             if (!user) {
-                response = `END Register at kazimtaani.co.ke to view your profile.`;
+                response = `END Register first. Dial again and choose Register.`;
             } else {
-                const stars  = user.rating > 0 ? `${user.rating.toFixed(1)}/5` : 'No ratings yet';
-                const badge  = user.verificationStatus === 'verified' ? ' ✓' : '';
+                const stars = user.rating > 0 ? `${user.rating.toFixed(1)}/5` : 'No ratings yet';
+                const badge = user.verificationStatus === 'verified' ? ' ✓' : '';
                 response = `END ${user.name}${badge}\nRole: ${user.role}\nRating: ${stars}\nSkills: ${(user.skills || []).slice(0, 3).join(', ') || 'None set'}\n\nUpdate profile at kazimtaani.co.ke`;
             }
         }
 
         // ── Back from any sub-menu ───────────────────────────────────────────
         else if (last === '0') {
-            const user = await User.findOne({ phone });
             const greeting = user ? user.name.split(' ')[0] : 'there';
             response = `CON Welcome, ${greeting}!\n1. Browse Jobs\n2. My Applications\n3. My Profile\n0. Exit`;
         }
@@ -175,7 +224,6 @@ router.post('/', async (req, res) => {
         response = `END Sorry, a system error occurred. Please try again.`;
     }
 
-    // AT expects plain text, no JSON
     res.set('Content-Type', 'text/plain');
     res.send(response);
 });
