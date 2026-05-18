@@ -1,3 +1,4 @@
+const { MongoMemoryServer } = require('mongodb-memory-server');
 const request  = require('supertest');
 const mongoose = require('mongoose');
 const path     = require('path');
@@ -5,8 +6,17 @@ const fs       = require('fs');
 const app      = require('./app');
 const User     = require('../models/user');
 
-beforeAll(async () => { await mongoose.connect(process.env.MONGO_URI); });
-afterAll(async () => { await mongoose.connection.db.dropDatabase(); await mongoose.connection.close(); });
+let mongod;
+
+beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    await mongoose.connect(mongod.getUri());
+});
+afterAll(async () => {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+    await mongod.stop();
+});
 afterEach(async () => { await User.deleteMany({}); });
 
 async function registerAndLogin(name, phone, role) {
@@ -38,7 +48,7 @@ describe('Verification API', () => {
 
     test('only workers can upload (employer gets 403)', async () => {
         const cookie = await registerAndLogin('VfyEmpUp', '254700002005', 'employer');
-        const tmpPath = '/tmp/test_emp_id.png';
+        const tmpPath = path.join(require('os').tmpdir(), 'test_emp_id.png');
         require('fs').writeFileSync(tmpPath, TEST_IMAGE);
         const res = await request(app)
             .post('/api/verify/upload')
@@ -50,7 +60,7 @@ describe('Verification API', () => {
 
     test('worker can upload a verification document', async () => {
         const cookie = await registerAndLogin('VfyUpload', '254700002003', 'worker');
-        const tmpPath = path.join('/tmp', 'test_id.png');
+        const tmpPath = path.join(require('os').tmpdir(), 'test_id.png');
         fs.writeFileSync(tmpPath, TEST_IMAGE);
 
         const res = await request(app)
