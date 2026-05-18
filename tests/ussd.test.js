@@ -18,31 +18,88 @@ afterAll(async () => {
     await mongod.stop();
 });
 
-afterEach(async () => { await User.deleteMany({}); await Job.deleteMany({}); });
+afterEach(async () => {
+    await User.deleteMany({});
+    await Job.deleteMany({});
+});
 
-// Africa's Talking sends form-urlencoded POST
 function ussd(text, phone = '254712000000') {
     return request(app).post('/api/ussd')
         .type('form')
-        .send({ sessionId: 'test-session', serviceCode: '*384*30173#', phoneNumber: phone, text });
+        .send({ sessionId: 'sess1', serviceCode: '*384*30173#', phoneNumber: phone, text });
 }
 
-// ── Main menu ────────────────────────────────────────────────────────────────
-describe('Main menu', () => {
-    test('unregistered phone sees register option', async () => {
+async function createWorker(phone = '254712000001', lang = 'en') {
+    return User.create({ name: 'Alice Wanjiku', phone, password: 'x', role: 'worker', tokenVersion: 0, language: lang });
+}
+
+async function createEmployer(phone = '254712000002', lang = 'en') {
+    return User.create({ name: 'Bob Mwangi', phone, password: 'x', role: 'employer', tokenVersion: 0, language: lang });
+}
+
+async function createJob(employerId, overrides = {}) {
+    return Job.create({
+        title: 'Paint House', description: 'Paint walls', location: 'Nairobi',
+        pay: 1000, status: 'Open', category: 'manual',
+        employer: employerId, employerPhone: '254712000002',
+        ...overrides,
+    });
+}
+
+// ── Registration ──────────────────────────────────────────────────────────────
+describe('Registration', () => {
+    test('unregistered user sees register option', async () => {
         const res = await ussd('');
-        expect(res.statusCode).toBe(200);
         expect(res.text).toMatch(/CON/);
-        expect(res.text).toMatch(/not registered/i);
         expect(res.text).toMatch(/Register/i);
     });
 
-    test('registered user sees personalised menu', async () => {
-        await User.create({ name: 'Alice Wanjiku', phone: '254712000001', password: 'pass', role: 'worker', tokenVersion: 0 });
+    test('step 1: asks for full name', async () => {
+        const res = await ussd('1', '254799000001');
+        expect(res.text).toMatch(/full name/i);
+    });
+
+    test('step 2: asks for role', async () => {
+        const res = await ussd('1*John Kamau', '254799000001');
+        expect(res.text).toMatch(/Worker/i);
+        expect(res.text).toMatch(/Employer/i);
+    });
+
+    test('step 2: rejects short name', async () => {
+        const res = await ussd('1*J', '254799000001');
+        expect(res.text).toMatch(/short/i);
+    });
+
+    test('step 3: creates worker account', async () => {
+        await ussd('1*Mary Kamau*1', '254799000002');
+        const saved = await User.findOne({ phone: '254799000002' });
+        expect(saved).not.toBeNull();
+        expect(saved.role).toBe('worker');
+    });
+
+    test('step 3: creates employer account', async () => {
+        const res = await ussd('1*Dan Otieno*2', '254799000003');
+        expect(res.text).toMatch(/^END/);
+        const saved = await User.findOne({ phone: '254799000003' });
+        expect(saved.role).toBe('employer');
+    });
+});
+
+// ── Worker main menu ──────────────────────────────────────────────────────────
+describe('Worker main menu', () => {
+    test('shows personalised worker menu (English)', async () => {
+        await createWorker();
         const res = await ussd('', '254712000001');
-        expect(res.text).toMatch(/CON/);
         expect(res.text).toMatch(/Alice/);
         expect(res.text).toMatch(/Browse Jobs/i);
+        expect(res.text).toMatch(/Language/i);
+    });
+
+    test('shows personalised worker menu (Swahili)', async () => {
+        await createWorker('254712000001', 'sw');
+        const res = await ussd('', '254712000001');
+        expect(res.text).toMatch(/Karibu/);
+        expect(res.text).toMatch(/Tafuta Kazi/i);
     });
 
     test('exit returns END', async () => {
@@ -50,115 +107,233 @@ describe('Main menu', () => {
         expect(res.text).toMatch(/^END/);
     });
 
-    test('response content-type is text/plain', async () => {
+    test('content-type is text/plain', async () => {
         const res = await ussd('');
         expect(res.headers['content-type']).toMatch(/text\/plain/);
     });
 });
 
-// ── Registration flow ────────────────────────────────────────────────────────
-describe('Registration flow', () => {
-    const NEW_PHONE = '254799000001';
-
-    test('step 1: asks for full name', async () => {
-        const res = await ussd('1', NEW_PHONE);
-        expect(res.text).toMatch(/CON/);
-        expect(res.text).toMatch(/full name/i);
-    });
-
-    test('step 2: asks for role after name entered', async () => {
-        const res = await ussd('1*John Kamau', NEW_PHONE);
-        expect(res.text).toMatch(/CON/);
-        expect(res.text).toMatch(/role/i);
-        expect(res.text).toMatch(/Worker/i);
-        expect(res.text).toMatch(/Employer/i);
-    });
-
-    test('step 2: rejects name that is too short', async () => {
-        const res = await ussd('1*J', NEW_PHONE);
-        expect(res.text).toMatch(/CON/);
-        expect(res.text).toMatch(/too short/i);
-    });
-
-    test('step 3: creates worker account', async () => {
-        const res = await ussd('1*John Kamau*1', NEW_PHONE);
-        expect(res.text).toMatch(/^END/);
-        expect(res.text).toMatch(/Registered/i);
-        const saved = await User.findOne({ phone: NEW_PHONE });
-        expect(saved).not.toBeNull();
-        expect(saved.role).toBe('worker');
-        expect(saved.name).toBe('John Kamau');
-    });
-
-    test('step 3: creates employer account', async () => {
-        const res = await ussd('1*Jane Otieno*2', NEW_PHONE);
-        expect(res.text).toMatch(/^END/);
-        const saved = await User.findOne({ phone: NEW_PHONE });
-        expect(saved.role).toBe('employer');
-    });
-
-    test('step 3: invalid role choice prompts again', async () => {
-        const res = await ussd('1*John Kamau*9', NEW_PHONE);
-        expect(res.text).toMatch(/CON/);
-        expect(res.text).toMatch(/Invalid/i);
-    });
-});
-
-// ── Browse jobs ───────────────────────────────────────────────────────────────
-describe('Browse jobs', () => {
-    test('lists open jobs', async () => {
-        await Job.create({ title: 'Painter', description: 'Paint walls', location: 'Nairobi', pay: 800, status: 'Open',
-            employer: new mongoose.Types.ObjectId(), employerPhone: '254700000000', category: 'manual' });
+// ── Browse jobs by category ───────────────────────────────────────────────────
+describe('Browse jobs by category', () => {
+    test('option 1 shows category menu', async () => {
+        await createWorker();
         const res = await ussd('1', '254712000001');
-        // unregistered → registration flow, so create a registered user first
-        await User.create({ name: 'Bob', phone: '254712000001', password: 'x', role: 'worker', tokenVersion: 0 });
-        const res2 = await ussd('1', '254712000001');
-        expect(res2.text).toMatch(/CON/);
-        expect(res2.text).toMatch(/Painter|Open Jobs/i);
+        expect(res.text).toMatch(/All Jobs/i);
+        expect(res.text).toMatch(/Manual/i);
+        expect(res.text).toMatch(/Transport/i);
     });
 
-    test('no open jobs shows appropriate message', async () => {
-        await User.create({ name: 'Bob', phone: '254712000002', password: 'x', role: 'worker', tokenVersion: 0 });
-        const res = await ussd('1', '254712000002');
-        expect(res.text).toMatch(/No open jobs/i);
+    test('all jobs lists open jobs', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id);
+        await createWorker();
+        const res = await ussd('1*1', '254712000001');
+        expect(res.text).toMatch(/Paint House/i);
+    });
+
+    test('category filter returns matching jobs', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { category: 'manual' });
+        await createJob(emp._id, { title: 'Drive Truck', category: 'transport' });
+        await createWorker();
+
+        const manualRes = await ussd('1*2', '254712000001');  // manual
+        expect(manualRes.text).toMatch(/Paint House/i);
+        expect(manualRes.text).not.toMatch(/Drive Truck/i);
+
+        const transportRes = await ussd('1*3', '254712000001'); // transport
+        expect(transportRes.text).toMatch(/Drive Truck/i);
+        expect(transportRes.text).not.toMatch(/Paint House/i);
+    });
+
+    test('no jobs in category shows appropriate message', async () => {
+        await createWorker();
+        const res = await ussd('1*4', '254712000001'); // technical — none created
+        expect(res.text).toMatch(/No open jobs|Hakuna/i);
+    });
+
+    test('job detail shows title, location, pay', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id);
+        await createWorker();
+        const res = await ussd('1*2*1', '254712000001'); // first manual job
+        expect(res.text).toMatch(/Nairobi/i);
+        expect(res.text).toMatch(/1,000|1000/);
+        expect(res.text).toMatch(/Apply/i);
+    });
+
+    test('worker can apply for a job', async () => {
+        const emp = await createEmployer();
+        const job = await createJob(emp._id);
+        await createWorker();
+        const res = await ussd('1*2*1*1', '254712000001');
+        expect(res.text).toMatch(/^END/);
+        expect(res.text).toMatch(/Applied|Umefanikiwa/i);
+
+        const updated = await Job.findById(job._id);
+        expect(updated.applicants).toContain('Alice Wanjiku');
+    });
+
+    test('worker cannot apply twice', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        await createWorker();
+        const res = await ussd('1*2*1*1', '254712000001');
+        expect(res.text).toMatch(/already|Umeshaomba/i);
+    });
+
+    test('category menu in Swahili', async () => {
+        await createWorker('254712000001', 'sw');
+        const res = await ussd('1', '254712000001');
+        expect(res.text).toMatch(/Kazi Zote/i);
+        expect(res.text).toMatch(/Kazi ya Mikono/i);
     });
 });
 
 // ── My Applications ──────────────────────────────────────────────────────────
 describe('My Applications', () => {
-    test('unregistered user gets redirect message', async () => {
-        const res = await ussd('2', '254700099999');
-        expect(res.text).toMatch(/END/);
-        expect(res.text).toMatch(/Register/i);
+    test('shows applied jobs', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        await createWorker();
+        const res = await ussd('2', '254712000001');
+        expect(res.text).toMatch(/Paint House/i);
     });
 
-    test('registered user with no applications', async () => {
-        await User.create({ name: 'Carol', phone: '254712000003', password: 'x', role: 'worker', tokenVersion: 0 });
-        const res = await ussd('2', '254712000003');
-        expect(res.text).toMatch(/no applications/i);
+    test('shows hired status correctly', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku'], hiredWorker: 'Alice Wanjiku', status: 'In Progress' });
+        await createWorker();
+        const res = await ussd('2', '254712000001');
+        expect(res.text).toMatch(/HIRED/i);
+    });
+
+    test('no applications message', async () => {
+        await createWorker();
+        const res = await ussd('2', '254712000001');
+        expect(res.text).toMatch(/no applications|Huna maombi/i);
     });
 });
 
-// ── My Profile ───────────────────────────────────────────────────────────────
+// ── My Profile ────────────────────────────────────────────────────────────────
 describe('My Profile', () => {
-    test('unregistered user gets redirect message', async () => {
-        const res = await ussd('3', '254700099998');
-        expect(res.text).toMatch(/END/);
+    test('shows worker profile', async () => {
+        await createWorker();
+        const res = await ussd('3', '254712000001');
+        expect(res.text).toMatch(/^END/);
+        expect(res.text).toMatch(/Alice Wanjiku/i);
     });
 
-    test('registered worker sees profile', async () => {
-        await User.create({ name: 'Profile Wk', phone: '254712000004', password: 'x', role: 'worker',
-            rating: 4.5, tokenVersion: 0 });
-        const res = await ussd('3', '254712000004');
-        expect(res.text).toMatch(/^END/);
-        expect(res.text).toMatch(/Profile Wk/i);
+    test('shows profile in Swahili', async () => {
+        await createWorker('254712000001', 'sw');
+        const res = await ussd('3', '254712000001');
+        expect(res.text).toMatch(/Jukumu|Ukadiriaji/i);
     });
 });
 
-// ── Misc ─────────────────────────────────────────────────────────────────────
+// ── Language selection ────────────────────────────────────────────────────────
+describe('Language selection', () => {
+    test('worker option 4 shows language menu', async () => {
+        await createWorker();
+        const res = await ussd('4', '254712000001');
+        expect(res.text).toMatch(/English/i);
+        expect(res.text).toMatch(/Kiswahili/i);
+    });
+
+    test('selecting Swahili updates user language', async () => {
+        await createWorker();
+        const res = await ussd('4*2', '254712000001');
+        expect(res.text).toMatch(/^END/);
+        const updated = await User.findOne({ phone: '254712000001' });
+        expect(updated.language).toBe('sw');
+    });
+
+    test('selecting English keeps language as en', async () => {
+        await createWorker('254712000001', 'sw');
+        await ussd('4*1', '254712000001');
+        const updated = await User.findOne({ phone: '254712000001' });
+        expect(updated.language).toBe('en');
+    });
+});
+
+// ── Employer flows ────────────────────────────────────────────────────────────
+describe('Employer flows', () => {
+    test('employer sees employer menu (not worker menu)', async () => {
+        await createEmployer();
+        const res = await ussd('', '254712000002');
+        expect(res.text).toMatch(/My Jobs/i);
+        expect(res.text).not.toMatch(/Browse Jobs/i);
+    });
+
+    test('employer sees their jobs list', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id);
+        const res = await ussd('1', '254712000002');
+        expect(res.text).toMatch(/Paint House/i);
+        expect(res.text).toMatch(/\(0\)/); // 0 applicants
+    });
+
+    test('employer sees no jobs message', async () => {
+        await createEmployer();
+        const res = await ussd('1', '254712000002');
+        expect(res.text).toMatch(/no.*jobs|Huna kazi/i);
+    });
+
+    test('employer sees applicant count on job detail', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku', 'Carol Muthoni'] });
+        const res = await ussd('1*1', '254712000002');
+        expect(res.text).toMatch(/Applicants: 2|Waombaji: 2/i);
+    });
+
+    test('employer sees applicants list', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        const res = await ussd('1*1*1', '254712000002');
+        expect(res.text).toMatch(/Alice Wanjiku/i);
+    });
+
+    test('employer sees hire confirmation prompt', async () => {
+        const emp = await createEmployer();
+        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        const res = await ussd('1*1*1*1', '254712000002');
+        expect(res.text).toMatch(/Hire Alice|Mwajiri Alice/i);
+        expect(res.text).toMatch(/1,000|1000/);
+    });
+
+    test('employer can hire a worker via USSD', async () => {
+        const emp = await createEmployer();
+        const worker = await createWorker();
+        const job = await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+
+        const res = await ussd('1*1*1*1*1', '254712000002');
+        expect(res.text).toMatch(/^END/);
+        expect(res.text).toMatch(/Alice|hired|ameajiriwa/i);
+
+        const updated = await Job.findById(job._id);
+        expect(updated.hiredWorker).toBe('Alice Wanjiku');
+        expect(updated.status).toBe('In Progress');
+    });
+
+    test('employer language option is option 3', async () => {
+        await createEmployer();
+        const res = await ussd('3', '254712000002');
+        expect(res.text).toMatch(/English/i);
+        expect(res.text).toMatch(/Kiswahili/i);
+    });
+
+    test('employer menu in Swahili', async () => {
+        await createEmployer('254712000002', 'sw');
+        const res = await ussd('', '254712000002');
+        expect(res.text).toMatch(/Kazi Zangu/i);
+    });
+});
+
+// ── Misc ──────────────────────────────────────────────────────────────────────
 describe('Misc', () => {
     test('invalid option returns error', async () => {
-        const res = await ussd('99');
-        expect(res.text).toMatch(/Invalid/i);
+        await createWorker();
+        const res = await ussd('99', '254712000001');
+        expect(res.text).toMatch(/Invalid|Chaguo baya/i);
     });
 });

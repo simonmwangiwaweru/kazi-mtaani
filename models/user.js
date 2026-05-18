@@ -50,6 +50,8 @@ const UserSchema = new mongoose.Schema({
     resetOTP:       { type: String },
     resetOTPExpiry: { type: Date },
 
+    language: { type: String, enum: ['en', 'sw'], default: 'en' },
+
     dateJoined: { type: Date, default: Date.now }
 });
 
