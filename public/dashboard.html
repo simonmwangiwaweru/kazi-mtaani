@@ -2745,6 +2745,8 @@
                             ${hasApplied?'Applied':'Apply Now'}
                         </button>` : ''}
                     ${role==='employer' ? `
+                        ${job.status==='Open' ? `<button class="btn-ghost btn-edit-job" data-jobid="${job._id}"
+                            style="font-size:0.82rem;display:inline-flex;align-items:center;gap:5px;margin-right:6px;"><svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg> Edit</button>` : ''}
                         <button class="btn-ghost btn-delete" data-jobid="${job._id}"
                             style="font-size:0.82rem;color:#c62828;border-color:#f9bbb4;display:inline-flex;align-items:center;gap:5px;"><svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='3 6 5 6 21 6'/><path d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/><path d='M10 11v6'/><path d='M14 11v6'/><path d='M9 6V4h6v2'/></svg> Delete</button>` : ''}
                 </div>
@@ -3952,6 +3954,106 @@
 
     // Initial load
     loadJobs();
+
+    // ── EDIT JOB ──────────────────────────────────────────────────────────────
+    let _editJobId = null;
+
+    document.getElementById('jobs-container').addEventListener('click', e => {
+        const btn = e.target.closest('.btn-edit-job');
+        if (!btn) return;
+        openEditJob(btn.getAttribute('data-jobid'));
+    });
+
+    async function openEditJob(jobId) {
+        _editJobId = jobId;
+        const res = await apiFetch(`/api/jobs/${jobId}`, { headers: authHeaders() });
+        if (!res.ok) return showToast('error', 'Error', 'Could not load job details.');
+        const job = await res.json();
+
+        document.getElementById('ejTitle').value       = job.title || '';
+        document.getElementById('ejLocation').value    = job.location || '';
+        document.getElementById('ejPay').value         = job.pay || '';
+        document.getElementById('ejCategory').value    = job.category || 'casual';
+        document.getElementById('ejDuration').value    = job.duration || '';
+        document.getElementById('ejDescription').value = job.description || '';
+        document.getElementById('ejSkills').value      = (job.requiredSkills || []).join(', ');
+        document.getElementById('editJobModal').classList.add('open');
+    }
+
+    document.getElementById('editJobModal').addEventListener('click', e => {
+        if (e.target === document.getElementById('editJobModal')) closeEditJob();
+    });
+
+    function closeEditJob() {
+        document.getElementById('editJobModal').classList.remove('open');
+        _editJobId = null;
+    }
+
+    document.getElementById('editJobForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const skillsRaw = document.getElementById('ejSkills').value;
+        const requiredSkills = skillsRaw.split(',').map(s => s.trim()).filter(Boolean);
+        const body = {
+            title:         document.getElementById('ejTitle').value,
+            location:      document.getElementById('ejLocation').value,
+            pay:           document.getElementById('ejPay').value,
+            category:      document.getElementById('ejCategory').value,
+            duration:      document.getElementById('ejDuration').value,
+            description:   document.getElementById('ejDescription').value,
+            requiredSkills,
+        };
+        const res = await apiFetch(`/api/jobs/${_editJobId}/edit`, {
+            method: 'PUT', headers: authHeaders(), body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            return showToast('error', 'Update Failed', err.msg || 'Unknown error');
+        }
+        showToast('success', 'Job Updated', 'Your job listing has been updated.');
+        closeEditJob();
+        loadJobs();
+    });
 </script>
+
+<!-- EDIT JOB MODAL -->
+<style>#editJobModal.open{display:flex!important;}</style>
+<div id="editJobModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid #e5e7eb;">
+            <h2 style="font-size:1.1rem;font-family:'Outfit',sans-serif;font-weight:700;">Edit Job</h2>
+            <button onclick="closeEditJob()" style="background:none;border:none;cursor:pointer;color:#666;font-size:1.3rem;line-height:1;">&times;</button>
+        </div>
+        <form id="editJobForm" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+            <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Job Title</label>
+                <input id="ejTitle" type="text" required style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Location</label>
+                    <input id="ejLocation" type="text" required style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;"></div>
+                <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Pay (KES)</label>
+                    <input id="ejPay" type="number" min="1" required style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Category</label>
+                    <select id="ejCategory" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;">
+                        <option value="artisan">Artisan / Trade</option>
+                        <option value="technical">Technical</option>
+                        <option value="transport">Transport</option>
+                        <option value="cleaning">Cleaning / Domestic</option>
+                        <option value="casual">Casual Labour</option>
+                    </select></div>
+                <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Duration</label>
+                    <input id="ejDuration" type="text" placeholder="e.g. 1 day" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;"></div>
+            </div>
+            <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Description</label>
+                <textarea id="ejDescription" rows="4" required style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;resize:vertical;"></textarea></div>
+            <div><label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Required Skills <span style="font-weight:400;color:#888;">(comma-separated)</span></label>
+                <input id="ejSkills" type="text" placeholder="e.g. driving, lifting, cleaning" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.9rem;font-family:inherit;"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+                <button type="button" onclick="closeEditJob()" style="padding:10px 20px;border:1.5px solid #e5e7eb;background:#fff;border-radius:8px;cursor:pointer;font-size:0.88rem;font-family:inherit;">Cancel</button>
+                <button type="submit" style="padding:10px 24px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:600;font-family:inherit;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>

@@ -76,8 +76,8 @@ router.post('/', protect, async (req, res) => {
 
         // Validate pay amount
         const payAmount = Number(pay);
-        if (isNaN(payAmount) || payAmount < 50 || payAmount > 1000000) {
-            return res.status(400).json({ msg: 'Pay must be between 50 and 1,000,000 KES.' });
+        if (isNaN(payAmount) || payAmount < 1 || payAmount > 1000000) {
+            return res.status(400).json({ msg: 'Pay must be between 1 and 1,000,000 KES.' });
         }
 
         const VALID_CATEGORIES = ['artisan', 'technical', 'transport', 'cleaning', 'casual'];
@@ -131,7 +131,57 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// 3. DELETE a job (owner only, authenticated)
+// 3. GET single job by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id).lean();
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+        res.json(job);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
+// 4. EDIT a job (owner only, Open jobs only)
+router.put('/:id/edit', protect, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id);
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+        if (job.employer && job.employer.toString() !== req.user.id)
+            return res.status(403).json({ msg: 'Not authorized.' });
+        if (job.status !== 'Open')
+            return res.status(400).json({ msg: 'Only Open jobs can be edited.' });
+
+        const { title, description, location, pay, category, duration } = req.body;
+        let { requiredSkills } = req.body;
+
+        if (!title || !description || !location || !pay || !category)
+            return res.status(400).json({ msg: 'All fields are required.' });
+
+        const payAmount = Number(pay);
+        if (isNaN(payAmount) || payAmount < 1 || payAmount > 1000000)
+            return res.status(400).json({ msg: 'Pay must be between 1 and 1,000,000 KES.' });
+
+        const VALID_CATEGORIES = ['artisan', 'technical', 'transport', 'cleaning', 'casual'];
+        if (!Array.isArray(requiredSkills)) requiredSkills = [];
+        const safeSkills = requiredSkills.map(s => sanitizeText(s, 60)).filter(Boolean).slice(0, 10);
+
+        job.title       = sanitizeText(title, 120);
+        job.description = sanitizeText(description, 2000);
+        job.location    = sanitizeText(location, 120);
+        job.pay         = payAmount;
+        job.category    = VALID_CATEGORIES.includes(category) ? category : 'casual';
+        job.duration    = sanitizeText(duration || '', 60);
+        job.requiredSkills = safeSkills;
+        await job.save();
+
+        res.json(job);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error updating job.' });
+    }
+});
+
+// 4. DELETE a job (owner only, authenticated)
 router.delete('/:id', protect, async (req, res) => {
     try {
         const job = await Job.findById(req.params.id);
