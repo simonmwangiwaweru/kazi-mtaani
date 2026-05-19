@@ -1228,6 +1228,10 @@
                 </div>
             </div>
             <button id="logoutBtn" class="btn-ghost w-full" style="font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg> Sign Out</button>
+            <button id="deleteAccountBtn" style="font-size:0.78rem;color:#c62828;background:none;border:none;cursor:pointer;padding:6px 0;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;opacity:0.7;margin-top:4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2'/></svg>
+                Delete Account
+            </button>
         </div>
     </aside>
 
@@ -1819,6 +1823,27 @@
             localStorage.clear();
             sessionStorage.clear();
             window.location.href = 'login.html';
+        });
+    }
+
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', () => {
+            showConfirm(
+                'Delete Account?',
+                'This will permanently delete your account and all your data. This cannot be undone.',
+                async () => {
+                    const res = await apiFetch('/api/auth/account', { method: 'DELETE', headers: authHeaders() });
+                    if (res.ok) {
+                        showToast('success', 'Account Deleted', 'Your account has been removed.');
+                        setTimeout(() => { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }, 1500);
+                    } else {
+                        const err = await res.json();
+                        showToast('error', 'Error', err.msg || 'Could not delete account.');
+                    }
+                },
+                'danger', 'Yes, Delete My Account'
+            );
         });
     }
 

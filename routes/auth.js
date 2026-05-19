@@ -565,4 +565,47 @@ router.put('/change-password', protect, async (req, res) => {
     }
 });
 
+// DELETE /api/auth/account — permanently delete the logged-in user's account
+router.delete('/account', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'User not found.' });
+
+        const Job          = require('../models/job');
+        const Rating       = require('../models/Rating');
+        const Message      = require('../models/Message');
+        const Notification = require('../models/Notification');
+
+        if (user.role === 'employer') {
+            // Delete all jobs posted by this employer
+            await Job.deleteMany({ employer: user._id });
+        } else {
+            // Remove worker from all applicant lists
+            await Job.updateMany(
+                { applicants: user._id },
+                { $pull: { applicants: user._id } }
+            );
+            // Clear hiredWorker references on jobs where they were hired
+            await Job.updateMany(
+                { hiredWorkerId: user._id },
+                { $set: { hiredWorker: null, hiredWorkerId: null, status: 'Open' } }
+            );
+        }
+
+        // Delete ratings, messages, notifications
+        await Rating.deleteMany({ $or: [{ subjectId: user._id }, { raterId: user._id }] });
+        await Message.deleteMany({ $or: [{ sender: user._id }, { recipient: user._id }] });
+        await Notification.deleteMany({ user: user._id });
+
+        await User.findByIdAndDelete(user._id);
+
+        // Clear auth cookie
+        res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+        res.json({ msg: 'Account deleted successfully.' });
+    } catch (err) {
+        console.error('Delete account error:', err.message);
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
 module.exports = router;
