@@ -45,6 +45,7 @@ const UserSchema = new mongoose.Schema({
     },
     verificationDoc:  { type: String, default: '' },   // uploaded file path
     verificationNote: { type: String, default: '' },   // admin rejection reason
+    certificates:     { type: [String], default: [] }, // professional certificate filenames
 
     // PASSWORD RESET
     resetOTP:       { type: String },

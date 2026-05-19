@@ -39,10 +39,18 @@ router.get('/', async (req, res) => {
         const limitNum = Math.min(100, parseInt(limit) || 50);
         const skip     = (pageNum - 1) * limitNum;
 
-        const [jobs, total] = await Promise.all([
-            Job.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+        const [rawJobs, total] = await Promise.all([
+            Job.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum)
+                .populate('applicants', 'name'),
             Job.countDocuments(query)
         ]);
+
+        // Return applicants as name strings for dashboard backward-compatibility
+        const jobs = rawJobs.map(j => {
+            const obj = j.toObject();
+            obj.applicants = (obj.applicants || []).map(a => a?.name || String(a));
+            return obj;
+        });
 
         res.json({ jobs, total, page: pageNum, pages: Math.ceil(total / limitNum) });
     } catch (err) {
@@ -72,8 +80,8 @@ router.post('/', protect, async (req, res) => {
             return res.status(400).json({ msg: 'Pay must be between 50 and 1,000,000 KES.' });
         }
 
-        const VALID_CATEGORIES = ['manual', 'transport', 'technical', 'general'];
-        const safeCategory = VALID_CATEGORIES.includes(category) ? category : 'general';
+        const VALID_CATEGORIES = ['artisan', 'technical', 'transport', 'cleaning', 'casual'];
+        const safeCategory = VALID_CATEGORIES.includes(category) ? category : 'casual';
 
         // Sanitize skills array (max 10)
         if (!Array.isArray(requiredSkills)) requiredSkills = [];
@@ -148,14 +156,17 @@ router.put('/apply/:id', protect, async (req, res) => {
             return res.status(403).json({ msg: 'Only workers can apply for jobs.' });
         }
 
-        // Use authenticated user's ID and name — not from body
         const job = await Job.findByIdAndUpdate(
             req.params.id,
-            { $addToSet: { applicants: req.user.name } },
+            { $addToSet: { applicants: req.user.id } },
             { new: true }
-        );
+        ).populate('applicants', 'name');
 
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
+
+        // Normalize applicants to names for response
+        const jobObj = job.toObject();
+        jobObj.applicants = (jobObj.applicants || []).map(a => a?.name || String(a));
 
         // Notify the employer that someone applied
         if (job.employer) {
@@ -168,7 +179,7 @@ router.put('/apply/:id', protect, async (req, res) => {
             );
         }
 
-        res.json({ msg: 'Application successful!', job });
+        res.json({ msg: 'Application successful!', job: jobObj });
     } catch (err) {
         res.status(500).json({ msg: 'Server error. Could not apply.' });
     }

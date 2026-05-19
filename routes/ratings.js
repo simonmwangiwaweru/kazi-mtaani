@@ -2,7 +2,15 @@ const express = require('express');
 const router  = express.Router();
 const Rating  = require('../models/Rating');
 const Job     = require('../models/job');
+const User    = require('../models/user');
 const protect = require('../middleware/auth');
+
+async function updateUserRating(userId, ratingType) {
+    const ratings = await Rating.find({ ratingType, subjectId: userId });
+    if (!ratings.length) return;
+    const avg = ratings.reduce((s, r) => s + r.stars, 0) / ratings.length;
+    await User.findByIdAndUpdate(userId, { rating: Math.round(avg * 10) / 10 });
+}
 
 // POST /api/ratings — Employer rates a worker (authenticated)
 router.post('/', protect, async (req, res) => {
@@ -33,7 +41,6 @@ router.post('/', protect, async (req, res) => {
         const existing = await Rating.findOne({ job: jobId, ratingType: 'worker' });
         if (existing) return res.status(400).json({ msg: 'You have already rated this job.' });
 
-        const User = require('../models/user');
         const worker = await User.findOne({ name: workerName, role: 'worker' }).select('_id');
 
         const rating = new Rating({
@@ -52,6 +59,7 @@ router.post('/', protect, async (req, res) => {
         });
 
         await rating.save();
+        if (worker?._id) await updateUserRating(worker._id, 'worker');
         res.status(201).json({ msg: 'Rating submitted successfully!', rating });
     } catch (err) {
         if (err.code === 11000) return res.status(400).json({ msg: 'You have already rated this job.' });
@@ -101,6 +109,7 @@ router.post('/employer', protect, async (req, res) => {
         });
 
         await rating.save();
+        if (job.employer?._id) await updateUserRating(job.employer._id, 'employer');
 
         // Notify the employer
         if (job.employer?._id) {

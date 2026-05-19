@@ -17,7 +17,10 @@
     "setupFiles": [
       "./tests/setup.js"
     ],
-    "testTimeout": 30000
+    "testTimeout": 60000
+  },
+  "mongodbMemoryServer": {
+    "instanceStartupTimeout": 60000
   },
   "engines": {
     "node": ">=20.0.0"

@@ -17,11 +17,13 @@ router.get('/worker', protect, async (req, res) => {
         const allJobs = await Job.find({
             $or: [
                 { hiredWorker: req.user.name },
-                { applicants:  req.user.name }
+                { applicants:  req.user.id }
             ]
         }).lean();
 
-        const applied    = allJobs.filter(j => j.applicants?.includes(req.user.name)).length;
+        const applied    = allJobs.filter(j =>
+            j.applicants?.some(id => id && id.toString() === req.user.id)
+        ).length;
         const hired      = allJobs.filter(j => j.hiredWorker === req.user.name).length;
         const completed  = allJobs.filter(j => j.hiredWorker === req.user.name && j.status === 'Completed').length;
         const earned     = allJobs.filter(j => j.hiredWorker === req.user.name && j.paymentStatus === 'Released')

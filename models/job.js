@@ -17,8 +17,8 @@ const JobSchema = new mongoose.Schema({
     requiredSkills: { type: [String], default: [] },
     duration:       { type: String, maxlength: 100, default: '' },
 
-    // Tracks usernames of people who clicked "Apply"
-    applicants: { type: [String], default: [] },
+    // Tracks IDs of workers who clicked "Apply" (populated to names when read)
+    applicants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
     status: {
         type: String,

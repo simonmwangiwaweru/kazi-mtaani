@@ -399,6 +399,28 @@ router.put('/profile', protect, async (req, res) => {
             { new: true, runValidators: true }
         ).select('-password -tokenVersion -googleId');
 
+        // Notify employers with open jobs that match this worker's updated skills
+        if (user.role === 'worker' && updates.skills && updates.skills.length > 0) {
+            const Job = require('../models/job');
+            const { createNotification } = require('./notifications');
+            const matchingJobs = await Job.find({
+                status: 'Open',
+                requiredSkills: { $in: updates.skills.map(s => new RegExp(s, 'i')) }
+            }).select('employer title').limit(10).lean();
+
+            matchingJobs.forEach(job => {
+                if (job.employer) {
+                    createNotification(
+                        job.employer,
+                        'general',
+                        `New worker available: ${user.name}`,
+                        `${user.name} has skills matching your open job "${job.title}". Check their profile!`,
+                        'jobs'
+                    );
+                }
+            });
+        }
+
         res.json({ msg: 'Profile updated!', user });
     } catch (err) {
         console.error('Profile update error:', err.message);

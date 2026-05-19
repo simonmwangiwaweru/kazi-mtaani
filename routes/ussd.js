@@ -41,11 +41,12 @@ const MAX_APPLICANTS = 3;
 
 // ── Category map: USSD number → DB value ─────────────────────────────────────
 const CATEGORIES = {
-    '1': { en: 'All Jobs',         sw: 'Kazi Zote',      value: '' },
-    '2': { en: 'Manual / Labour',  sw: 'Kazi ya Mikono', value: 'manual' },
-    '3': { en: 'Transport',        sw: 'Usafirishaji',   value: 'transport' },
-    '4': { en: 'Technical',        sw: 'Kiufundi',       value: 'technical' },
-    '5': { en: 'General',          sw: 'Kawaida',        value: 'general' },
+    '1': { en: 'All Jobs',         sw: 'Kazi Zote',        value: '' },
+    '2': { en: 'Artisan / Trade',  sw: 'Fundi wa Biashara', value: 'artisan' },
+    '3': { en: 'Technical',        sw: 'Kiufundi',          value: 'technical' },
+    '4': { en: 'Cleaning',         sw: 'Usafi',             value: 'cleaning' },
+    '5': { en: 'Transport',        sw: 'Usafirishaji',      value: 'transport' },
+    '6': { en: 'Casual Labour',    sw: 'Kazi Kawaida',      value: 'casual' },
 };
 
 // ── Translations ──────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ const STRINGS = {
         employerMenu: (name) => `CON Welcome, ${name}!\n1. My Jobs\n2. My Profile\n3. Language / Lugha\n0. Exit`,
 
         // Browse jobs
-        browseCategories: `CON Browse Jobs:\n1. All Jobs\n2. Manual / Labour\n3. Transport\n4. Technical\n5. General\n0. Back`,
+        browseCategories: `CON Browse Jobs:\n1. All Jobs\n2. Artisan / Trade\n3. Technical\n4. Cleaning\n5. Transport\n6. Casual Labour\n0. Back`,
         noJobs:           `CON No open jobs right now.\n0. Back`,
         openJobs:         `CON Open Jobs:`,
         jobDetail:        (j) => `CON ${j.title}\nLocation: ${j.location}\nPay: KES ${Number(j.pay).toLocaleString()}${j.duration ? '\nDuration: ' + j.duration : ''}\n\n1. Apply\n0. Back`,
@@ -110,7 +111,7 @@ const STRINGS = {
         workerMenu:   (name) => `CON Karibu, ${name}!\n1. Tafuta Kazi\n2. Maombi Yangu\n3. Wasifu Wangu\n4. Lugha / Language\n0. Toka`,
         employerMenu: (name) => `CON Karibu, ${name}!\n1. Kazi Zangu\n2. Wasifu Wangu\n3. Lugha / Language\n0. Toka`,
 
-        browseCategories: `CON Tafuta Kazi:\n1. Kazi Zote\n2. Kazi ya Mikono\n3. Usafirishaji\n4. Kiufundi\n5. Kawaida\n0. Rudi`,
+        browseCategories: `CON Tafuta Kazi:\n1. Kazi Zote\n2. Fundi wa Biashara\n3. Kiufundi\n4. Usafi\n5. Usafirishaji\n6. Kazi Kawaida\n0. Rudi`,
         noJobs:           `CON Hakuna kazi wazi sasa.\n0. Rudi`,
         openJobs:         `CON Kazi Wazi:`,
         jobDetail:        (j) => `CON ${j.title}\nMahali: ${j.location}\nMalipo: KES ${Number(j.pay).toLocaleString()}${j.duration ? '\nMuda: ' + j.duration : ''}\n\n1. Omba\n0. Rudi`,
@@ -290,8 +291,9 @@ router.post('/', async (req, res) => {
             if (!job || !(job.applicants || []).length) {
                 response = s(lang, 'noApplicants');
             } else {
-                const list = job.applicants.slice(0, MAX_APPLICANTS).map((name, i) =>
-                    `${i + 1}. ${name.slice(0, 20)}`
+                const appUsers = await User.find({ _id: { $in: job.applicants } }).select('name').lean();
+                const list = appUsers.slice(0, MAX_APPLICANTS).map((u, i) =>
+                    `${i + 1}. ${u.name.slice(0, 20)}`
                 ).join('\n');
                 response = `${s(lang, 'applicantList')}\n${list}\n\n0. Back`;
             }
@@ -303,11 +305,16 @@ router.post('/', async (req, res) => {
                 .sort({ createdAt: -1 }).limit(MAX_JOBS).lean();
             const job = jobs[parseInt(parts[1]) - 1];
             const appIdx = parseInt(parts[3]) - 1;
-            const workerName = job?.applicants?.[appIdx];
-            if (!job || !workerName) {
+            const workerIdRaw = job?.applicants?.[appIdx];
+            if (!job || !workerIdRaw) {
                 response = s(lang, 'invalidOption');
             } else {
-                response = s(lang, 'hirePrompt', workerName.split(' ')[0], job.pay);
+                const appWorker = await User.findById(workerIdRaw).select('name').lean();
+                if (!appWorker) {
+                    response = s(lang, 'hireNoWorker');
+                } else {
+                    response = s(lang, 'hirePrompt', appWorker.name.split(' ')[0], job.pay);
+                }
             }
         }
 
@@ -317,8 +324,8 @@ router.post('/', async (req, res) => {
                 .sort({ createdAt: -1 }).limit(MAX_JOBS).lean();
             const job = jobs[parseInt(parts[1]) - 1];
             const appIdx = parseInt(parts[3]) - 1;
-            const workerName = job?.applicants?.[appIdx];
-            const worker = workerName ? await User.findOne({ name: workerName }).select('_id name phone') : null;
+            const workerIdRaw = job?.applicants?.[appIdx];
+            const worker = workerIdRaw ? await User.findById(workerIdRaw).select('_id name phone') : null;
 
             if (!job || !worker) {
                 response = s(lang, 'hireNoWorker');
@@ -394,10 +401,10 @@ router.post('/', async (req, res) => {
 
             if (!job) {
                 response = s(lang, 'invalidOption');
-            } else if (job.applicants?.includes(user.name)) {
+            } else if (job.applicants?.some(id => id && id.toString() === user._id.toString())) {
                 response = s(lang, 'alreadyApplied');
             } else {
-                await Job.findByIdAndUpdate(job._id, { $addToSet: { applicants: user.name } });
+                await Job.findByIdAndUpdate(job._id, { $addToSet: { applicants: user._id } });
                 if (job.employer) {
                     createNotification(
                         job.employer, 'applied',
@@ -412,7 +419,7 @@ router.post('/', async (req, res) => {
 
         // My Applications
         else if (user && parts[0] === '2' && level === 1) {
-            const jobs = await Job.find({ applicants: user.name })
+            const jobs = await Job.find({ applicants: user._id })
                 .sort({ createdAt: -1 }).limit(5).select('title status hiredWorker').lean();
 
             if (!jobs.length) {

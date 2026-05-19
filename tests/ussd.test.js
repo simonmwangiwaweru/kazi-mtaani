@@ -40,7 +40,7 @@ async function createEmployer(phone = '254712000002', lang = 'en') {
 async function createJob(employerId, overrides = {}) {
     return Job.create({
         title: 'Paint House', description: 'Paint walls', location: 'Nairobi',
-        pay: 1000, status: 'Open', category: 'manual',
+        pay: 1000, status: 'Open', category: 'artisan',
         employer: employerId, employerPhone: '254712000002',
         ...overrides,
     });
@@ -119,7 +119,7 @@ describe('Browse jobs by category', () => {
         await createWorker();
         const res = await ussd('1', '254712000001');
         expect(res.text).toMatch(/All Jobs/i);
-        expect(res.text).toMatch(/Manual/i);
+        expect(res.text).toMatch(/Artisan/i);
         expect(res.text).toMatch(/Transport/i);
     });
 
@@ -127,28 +127,28 @@ describe('Browse jobs by category', () => {
         const emp = await createEmployer();
         await createJob(emp._id);
         await createWorker();
-        const res = await ussd('1*1', '254712000001');
+        const res = await ussd('1*1', '254712000001'); // All Jobs
         expect(res.text).toMatch(/Paint House/i);
     });
 
     test('category filter returns matching jobs', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { category: 'manual' });
+        await createJob(emp._id, { category: 'artisan' });
         await createJob(emp._id, { title: 'Drive Truck', category: 'transport' });
         await createWorker();
 
-        const manualRes = await ussd('1*2', '254712000001');  // manual
-        expect(manualRes.text).toMatch(/Paint House/i);
-        expect(manualRes.text).not.toMatch(/Drive Truck/i);
+        const artisanRes = await ussd('1*2', '254712000001');  // artisan
+        expect(artisanRes.text).toMatch(/Paint House/i);
+        expect(artisanRes.text).not.toMatch(/Drive Truck/i);
 
-        const transportRes = await ussd('1*3', '254712000001'); // transport
+        const transportRes = await ussd('1*5', '254712000001'); // transport (now slot 5)
         expect(transportRes.text).toMatch(/Drive Truck/i);
         expect(transportRes.text).not.toMatch(/Paint House/i);
     });
 
     test('no jobs in category shows appropriate message', async () => {
         await createWorker();
-        const res = await ussd('1*4', '254712000001'); // technical — none created
+        const res = await ussd('1*4', '254712000001'); // cleaning — none created
         expect(res.text).toMatch(/No open jobs|Hakuna/i);
     });
 
@@ -165,19 +165,19 @@ describe('Browse jobs by category', () => {
     test('worker can apply for a job', async () => {
         const emp = await createEmployer();
         const job = await createJob(emp._id);
-        await createWorker();
+        const worker = await createWorker();
         const res = await ussd('1*2*1*1', '254712000001');
         expect(res.text).toMatch(/^END/);
         expect(res.text).toMatch(/Applied|Umefanikiwa/i);
 
         const updated = await Job.findById(job._id);
-        expect(updated.applicants).toContain('Alice Wanjiku');
+        expect(updated.applicants.map(id => id.toString())).toContain(worker._id.toString());
     });
 
     test('worker cannot apply twice', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
-        await createWorker();
+        const worker = await createWorker();
+        await createJob(emp._id, { applicants: [worker._id] });
         const res = await ussd('1*2*1*1', '254712000001');
         expect(res.text).toMatch(/already|Umeshaomba/i);
     });
@@ -186,7 +186,7 @@ describe('Browse jobs by category', () => {
         await createWorker('254712000001', 'sw');
         const res = await ussd('1', '254712000001');
         expect(res.text).toMatch(/Kazi Zote/i);
-        expect(res.text).toMatch(/Kazi ya Mikono/i);
+        expect(res.text).toMatch(/Fundi wa Biashara/i);
     });
 });
 
@@ -194,16 +194,16 @@ describe('Browse jobs by category', () => {
 describe('My Applications', () => {
     test('shows applied jobs', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
-        await createWorker();
+        const worker = await createWorker();
+        await createJob(emp._id, { applicants: [worker._id] });
         const res = await ussd('2', '254712000001');
         expect(res.text).toMatch(/Paint House/i);
     });
 
     test('shows hired status correctly', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku'], hiredWorker: 'Alice Wanjiku', status: 'In Progress' });
-        await createWorker();
+        const worker = await createWorker();
+        await createJob(emp._id, { applicants: [worker._id], hiredWorker: 'Alice Wanjiku', status: 'In Progress' });
         const res = await ussd('2', '254712000001');
         expect(res.text).toMatch(/HIRED/i);
     });
@@ -281,21 +281,25 @@ describe('Employer flows', () => {
 
     test('employer sees applicant count on job detail', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku', 'Carol Muthoni'] });
+        const worker1 = await createWorker('254712000001');
+        const worker2 = await User.create({ name: 'Carol Muthoni', phone: '254712000010', password: 'x', role: 'worker', tokenVersion: 0 });
+        await createJob(emp._id, { applicants: [worker1._id, worker2._id] });
         const res = await ussd('1*1', '254712000002');
         expect(res.text).toMatch(/Applicants: 2|Waombaji: 2/i);
     });
 
     test('employer sees applicants list', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        const worker = await createWorker();
+        await createJob(emp._id, { applicants: [worker._id] });
         const res = await ussd('1*1*1', '254712000002');
         expect(res.text).toMatch(/Alice Wanjiku/i);
     });
 
     test('employer sees hire confirmation prompt', async () => {
         const emp = await createEmployer();
-        await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        const worker = await createWorker();
+        await createJob(emp._id, { applicants: [worker._id] });
         const res = await ussd('1*1*1*1', '254712000002');
         expect(res.text).toMatch(/Hire Alice|Mwajiri Alice/i);
         expect(res.text).toMatch(/1,000|1000/);
@@ -304,7 +308,7 @@ describe('Employer flows', () => {
     test('employer can hire a worker via USSD', async () => {
         const emp = await createEmployer();
         const worker = await createWorker();
-        const job = await createJob(emp._id, { applicants: ['Alice Wanjiku'] });
+        const job = await createJob(emp._id, { applicants: [worker._id] });
 
         const res = await ussd('1*1*1*1*1', '254712000002');
         expect(res.text).toMatch(/^END/);

@@ -36,7 +36,7 @@ router.post('/:jobId', protect, async (req, res) => {
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
 
         const isEmployer = job.employer?.toString() === req.user.id;
-        const isApplicant = job.applicants?.includes(req.user.name) ||
+        const isApplicant = job.applicants?.some(id => id && id.toString() === req.user.id) ||
                             job.hiredWorkerId?.toString() === req.user.id;
 
         if (!isEmployer && !isApplicant) {
@@ -65,7 +65,7 @@ router.get('/:jobId', protect, async (req, res) => {
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
 
         const isEmployer  = job.employer?.toString() === req.user.id;
-        const isApplicant = job.applicants?.includes(req.user.name) ||
+        const isApplicant = job.applicants?.some(id => id && id.toString() === req.user.id) ||
                             job.hiredWorkerId?.toString() === req.user.id;
 
         if (!isEmployer && !isApplicant) {
@@ -97,7 +97,7 @@ router.get('/meta/unread-count', protect, async (req, res) => {
             $or: [
                 { employer: req.user.id },
                 { hiredWorkerId: req.user.id },
-                { applicants: req.user.name }
+                { applicants: req.user.id }
             ]
         }).select('_id');
 
@@ -121,7 +121,7 @@ router.get('/', protect, async (req, res) => {
             $or: [
                 { employer: req.user.id },
                 { hiredWorkerId: req.user.id },
-                { applicants: req.user.name }
+                { applicants: req.user.id }
             ]
         }).select('_id title employer hiredWorker status').populate('employer', 'name').lean();
 

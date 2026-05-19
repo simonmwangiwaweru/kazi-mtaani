@@ -40,7 +40,7 @@ const validJob = {
     description: 'Need someone to dig a trench in Nairobi.',
     location:    'Westlands, Nairobi',
     pay:         500,
-    category:    'manual'
+    category:    'casual'
 };
 
 // ── POST /api/jobs ──────────────────────────────────────────────────────────

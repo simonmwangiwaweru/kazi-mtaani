@@ -12,7 +12,7 @@ const path         = require('path');
 dotenv.config();
 
 // Ensure uploads directories exist (important on Render's ephemeral disk)
-['uploads/verification'].forEach(dir => {
+['uploads/verification', 'uploads/certificates'].forEach(dir => {
     fs.mkdirSync(path.join(__dirname, dir), { recursive: true });
 });
 
@@ -109,8 +109,22 @@ mongoose.connect(mongoURI)
     .then(() => console.log("✅ Database Connected! Kazi Mtaani memory is active."))
     .catch((err) => console.log("❌ DB Connection Error:", err));
 
-// Serve uploaded verification documents (admin-only path in production)
-app.use('/uploads', require('express').static('uploads'));
+// Serve uploaded documents — auth required; only admin or the file owner can access.
+const protect = require('./middleware/auth');
+app.get('/uploads/verification/:filename', protect, (req, res) => {
+    const filename = path.basename(req.params.filename);
+    const isOwner  = filename.startsWith(req.user.id + '_');
+    const isAdmin  = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ msg: 'Access denied.' });
+    res.sendFile(path.join(__dirname, 'uploads', 'verification', filename));
+});
+app.get('/uploads/certificates/:filename', protect, (req, res) => {
+    const filename = path.basename(req.params.filename);
+    const isOwner  = filename.startsWith(req.user.id + '_cert_');
+    const isAdmin  = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ msg: 'Access denied.' });
+    res.sendFile(path.join(__dirname, 'uploads', 'certificates', filename));
+});
 
 // Health-check — Render pings this to confirm the service is up
 app.get('/api/auth/health', (_req, res) => res.json({ status: 'ok', ts: Date.now() }));
