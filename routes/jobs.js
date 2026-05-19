@@ -5,6 +5,7 @@ const User       = require('../models/user');
 const protect    = require('../middleware/auth');
 const AuditLog   = require('../models/AuditLog');
 const { createNotification } = require('./notifications');
+const { sendSMS }            = require('../services/sms');
 
 function audit(userId, userName, action, entity, entityId, details, req) {
     const ip = (req?.header('x-forwarded-for') || req?.ip || '').split(',')[0].trim();
@@ -186,7 +187,7 @@ router.put('/hire/:id', protect, async (req, res) => {
         }
 
         // Look up worker by ID — avoids ambiguity with duplicate names
-        const worker = await User.findById(workerId).select('name role');
+        const worker = await User.findById(workerId).select('name role phone');
         if (!worker) return res.status(404).json({ msg: 'Worker not found.' });
         if (worker.role !== 'worker') {
             return res.status(400).json({ msg: 'Selected user is not a worker.' });
@@ -198,6 +199,13 @@ router.put('/hire/:id', protect, async (req, res) => {
         // Ownership check
         if (job.employer && job.employer.toString() !== req.user.id) {
             return res.status(403).json({ msg: 'Not authorized to hire for this job.' });
+        }
+
+        // Escrow must be funded before a worker can be hired
+        if (job.paymentStatus !== 'In-Escrow') {
+            return res.status(400).json({
+                msg: 'Escrow must be funded before hiring. Go to the Payments tab and deposit the job amount via M-Pesa first.'
+            });
         }
 
         job.status = 'In Progress';
@@ -212,6 +220,13 @@ router.put('/hire/:id', protect, async (req, res) => {
             `${req.user.name} has hired you for: "${job.title}". Check your dashboard for next steps.`,
             'jobs'
         );
+
+        if (worker.phone) {
+            sendSMS(
+                worker.phone,
+                `Congratulations ${worker.name.split(' ')[0]}! You have been hired for "${job.title}" by ${req.user.name}. Login at kazimtaani.co.ke for next steps.`
+            ).catch(err => console.error('Hire SMS failed:', err.message));
+        }
 
         res.json(job);
     } catch (err) {

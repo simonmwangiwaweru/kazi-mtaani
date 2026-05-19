@@ -2681,7 +2681,11 @@
                                 <div class="applicant-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></div>
                                 <button class="applicant-name btn-profile" data-worker="${ew}" style="background:none;border:none;cursor:pointer;color:var(--green);font-size:0.88rem;font-weight:600;padding:0;">${ew}</button>
                             </div>
-                            ${role==='employer'&&!isHired ? `<button class="btn-primary btn-hire" data-worker="${ew}" data-jobtitle="${eTitle}" data-jobid="${job._id}" style="padding:7px 16px;font-size:0.82rem;">Hire &amp; Chat</button>`:'' }
+                            ${role==='employer'&&!isHired
+                                ? job.paymentStatus==='In-Escrow'
+                                    ? `<button class="btn-primary btn-hire" data-worker="${ew}" data-jobtitle="${eTitle}" data-jobid="${job._id}" style="padding:7px 16px;font-size:0.82rem;">Hire &amp; Chat</button>`
+                                    : `<span title="Go to Payments tab and fund escrow first" style="font-size:0.78rem;color:var(--text-light);padding:6px 10px;border:1px dashed var(--border);border-radius:8px;cursor:default;">Fund escrow to hire</span>`
+                                : ''}
                         </div>`;}).join('')
                     : `<p style="color:var(--text-secondary);font-size:0.88rem;text-align:center;padding:10px 0;">No applications yet.</p>`}
             </div>
@@ -2691,12 +2695,14 @@
 
     // ── JOB STATUS TIMELINE ──
     function renderTimeline(job) {
+        const isEscrowed   = ['In-Escrow','Releasing','Released','Refunding','Refunded'].includes(job.paymentStatus);
         const isHired      = !!job.hiredWorker;
         const isInProgress = job.status === 'In Progress' || job.status === 'Completed';
         const isCompleted  = job.status === 'Completed';
 
         const steps = [
-            { label: 'Posted',      done: true,         active: !isHired },
+            { label: 'Posted',      done: true,         active: !isEscrowed },
+            { label: 'Escrow',      done: isEscrowed,   active: isEscrowed && !isHired },
             { label: 'Hired',       done: isHired,      active: isHired && !isInProgress },
             { label: 'In Progress', done: isInProgress, active: isInProgress && !isCompleted },
             { label: 'Done',        done: isCompleted,  active: false },

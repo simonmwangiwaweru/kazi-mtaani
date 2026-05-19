@@ -167,3 +167,59 @@ describe('DELETE /api/jobs/:id', () => {
         expect(res.statusCode).toBe(403);
     });
 });
+
+// ── PUT /api/jobs/hire/:id ──────────────────────────────────────────────────
+describe('PUT /api/jobs/hire/:id', () => {
+    const Job  = require('../models/job');
+    const User = require('../models/user');
+    let jobId, workerId;
+
+    beforeEach(async () => {
+        const job = await request(app)
+            .post('/api/jobs')
+            .set('Cookie', employerCookie)
+            .send(validJob);
+        jobId = job.body._id;
+
+        const worker = await User.findOne({ phone: '254711000002' });
+        workerId = worker._id.toString();
+    });
+
+    test('cannot hire without escrow funded (paymentStatus=Pending)', async () => {
+        const res = await request(app)
+            .put(`/api/jobs/hire/${jobId}`)
+            .set('Cookie', employerCookie)
+            .send({ workerId });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.msg).toMatch(/escrow/i);
+    });
+
+    test('can hire after escrow is funded (paymentStatus=In-Escrow)', async () => {
+        await Job.findByIdAndUpdate(jobId, { paymentStatus: 'In-Escrow' });
+        const res = await request(app)
+            .put(`/api/jobs/hire/${jobId}`)
+            .set('Cookie', employerCookie)
+            .send({ workerId });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.status).toBe('In Progress');
+        expect(res.body.hiredWorker).toBe('Hard Worker');
+    });
+
+    test('worker cannot hire', async () => {
+        await Job.findByIdAndUpdate(jobId, { paymentStatus: 'In-Escrow' });
+        const res = await request(app)
+            .put(`/api/jobs/hire/${jobId}`)
+            .set('Cookie', workerCookie)
+            .send({ workerId });
+        expect(res.statusCode).toBe(403);
+    });
+
+    test('cannot hire on a non-existent job', async () => {
+        const fakeId = new (require('mongoose').Types.ObjectId)();
+        const res = await request(app)
+            .put(`/api/jobs/hire/${fakeId}`)
+            .set('Cookie', employerCookie)
+            .send({ workerId });
+        expect(res.statusCode).toBe(404);
+    });
+});
