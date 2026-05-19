@@ -1388,6 +1388,12 @@
                         <div id="pvVerifyContent">Loading…</div>
                     </div>
 
+                    <!-- PROFESSIONAL CERTIFICATES (workers only) -->
+                    <div class="pv-card" id="pvCertCard" style="display:none;">
+                        <div class="pv-card-title">Professional Certificates</div>
+                        <div id="pvCertContent">Loading…</div>
+                    </div>
+
                     <!-- CHANGE PASSWORD -->
                     <div class="pv-card" id="pvChangePasswordCard">
                         <div class="pv-card-title">Change Password</div>
@@ -1878,8 +1884,9 @@
                 renderProfileRatings(rData);
             }
 
-            // Verification status
+            // Verification status + certificates (workers only)
             loadVerificationStatus();
+            if (role === 'worker') loadCertificates();
 
         } catch (err) {
             console.error('Profile load error:', err);
@@ -1934,6 +1941,71 @@
                 });
             }
         } catch { if (box) box.innerHTML = `<p style="color:var(--text-secondary);font-size:0.85rem;">Could not load verification status.</p>`; }
+    }
+
+    // ── PROFESSIONAL CERTIFICATES ────────────────────────────────────────────
+    async function loadCertificates() {
+        const card = document.getElementById('pvCertCard');
+        const box  = document.getElementById('pvCertContent');
+        if (!card || !box) return;
+        card.style.display = '';
+        try {
+            const res  = await apiFetch('/api/auth/me', { headers: authHeaders() });
+            const user = await res.json();
+            const certs = user.certificates || [];
+
+            const certList = certs.length > 0
+                ? `<ul style="list-style:none;padding:0;margin:0 0 16px;">` +
+                  certs.map(f => `
+                    <li style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                        <span style="font-size:0.85rem;color:var(--text-primary);word-break:break-all;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            ${escapeHtml(f.replace(/^[^_]+_cert_\d+/, 'Certificate').replace(/\.\w+$/, ''))} <span style="font-size:0.74rem;color:var(--text-light);">(${escapeHtml(f.split('.').pop().toUpperCase())})</span>
+                        </span>
+                        <button onclick="deleteCertificate('${escapeHtml(f)}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:0.8rem;padding:4px 8px;border-radius:6px;transition:background 0.2s;" onmouseover="this.style.background='#fdecea'" onmouseout="this.style.background='none'">Remove</button>
+                    </li>`).join('') +
+                  `</ul>`
+                : `<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">No certificates uploaded yet. Add qualifications to stand out to employers.</p>`;
+
+            box.innerHTML = `
+                ${certList}
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:10px;">Upload certificates, trade qualifications, or any professional credentials (JPG, PNG, PDF — max 5 MB each).</p>
+                <form id="certUploadForm">
+                    <input type="file" id="certFile" accept=".jpg,.jpeg,.png,.pdf" style="display:block;margin-bottom:10px;font-size:0.85rem;" required>
+                    <button type="submit" class="btn-primary" style="padding:9px 20px;font-size:0.85rem;">Upload Certificate</button>
+                </form>
+                <p style="font-size:0.75rem;color:var(--text-light);margin-top:8px;">You can upload up to 5 certificates.</p>`;
+
+            document.getElementById('certUploadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fileInput = document.getElementById('certFile');
+                if (!fileInput.files[0]) return;
+                if ((user.certificates || []).length >= 5) {
+                    showToast('warn', 'Limit Reached', 'You can upload a maximum of 5 certificates.'); return;
+                }
+                const fd = new FormData();
+                fd.append('certificate', fileInput.files[0]);
+                const btn = e.target.querySelector('button[type=submit]');
+                btn.disabled = true; btn.textContent = 'Uploading…';
+                try {
+                    const r = await fetch('/api/verify/certificate', { method: 'POST', credentials: 'include', body: fd });
+                    const d = await r.json();
+                    if (r.ok) { showToast('success', 'Uploaded!', 'Certificate added to your profile.'); loadCertificates(); }
+                    else { showToast('error', 'Upload Failed', d.msg || 'Try again.'); btn.disabled = false; btn.textContent = 'Upload Certificate'; }
+                } catch { showToast('error', 'Error', 'Connection failed.'); btn.disabled = false; btn.textContent = 'Upload Certificate'; }
+            });
+        } catch { if (box) box.innerHTML = `<p style="color:var(--text-secondary);font-size:0.85rem;">Could not load certificates.</p>`; }
+    }
+
+    async function deleteCertificate(filename) {
+        showConfirm('Remove Certificate', 'Remove this certificate from your profile? This cannot be undone.', async () => {
+            try {
+                const r = await fetch(`/api/verify/certificate/${encodeURIComponent(filename)}`, { method: 'DELETE', credentials: 'include' });
+                const d = await r.json();
+                if (r.ok) { showToast('success', 'Removed', 'Certificate removed.'); loadCertificates(); }
+                else showToast('error', 'Error', d.msg || 'Could not remove certificate.');
+            } catch { showToast('error', 'Error', 'Connection failed.'); }
+        }, 'danger');
     }
 
     // ── CHANGE PASSWORD ──────────────────────────────────────────────────────

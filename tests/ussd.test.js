@@ -1,21 +1,16 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const request  = require('supertest');
 const mongoose = require('mongoose');
 const app      = require('./app');
 const User     = require('../models/user');
 const Job      = require('../models/job');
 
-let mongod;
-
 beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    await mongoose.connect(mongod.getUri());
+    await mongoose.connect(process.env.TEST_MONGO_URI);
 });
 
 afterAll(async () => {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
-    await mongod.stop();
 });
 
 afterEach(async () => {
@@ -299,7 +294,7 @@ describe('Employer flows', () => {
     test('employer sees hire confirmation prompt', async () => {
         const emp = await createEmployer();
         const worker = await createWorker();
-        await createJob(emp._id, { applicants: [worker._id] });
+        await createJob(emp._id, { applicants: [worker._id], paymentStatus: 'In-Escrow' });
         const res = await ussd('1*1*1*1', '254712000002');
         expect(res.text).toMatch(/Hire Alice|Mwajiri Alice/i);
         expect(res.text).toMatch(/1,000|1000/);
@@ -308,7 +303,7 @@ describe('Employer flows', () => {
     test('employer can hire a worker via USSD', async () => {
         const emp = await createEmployer();
         const worker = await createWorker();
-        const job = await createJob(emp._id, { applicants: [worker._id] });
+        const job = await createJob(emp._id, { applicants: [worker._id], paymentStatus: 'In-Escrow' });
 
         const res = await ussd('1*1*1*1*1', '254712000002');
         expect(res.text).toMatch(/^END/);

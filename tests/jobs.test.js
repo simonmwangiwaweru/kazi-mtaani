@@ -1,14 +1,11 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const request  = require('supertest');
 const mongoose = require('mongoose');
 const app      = require('./app');
 
-let mongod;
 let employerCookie, workerCookie, employerId;
 
 beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    await mongoose.connect(mongod.getUri());
+    await mongoose.connect(process.env.TEST_MONGO_URI);
 
     // Register employer
     const emp = await request(app).post('/api/auth/register').send({
@@ -27,7 +24,6 @@ beforeAll(async () => {
 afterAll(async () => {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
-    await mongod.stop();
 });
 
 afterEach(async () => {

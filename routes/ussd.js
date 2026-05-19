@@ -308,6 +308,10 @@ router.post('/', async (req, res) => {
             const workerIdRaw = job?.applicants?.[appIdx];
             if (!job || !workerIdRaw) {
                 response = s(lang, 'invalidOption');
+            } else if (job.paymentStatus !== 'In-Escrow') {
+                response = lang === 'sw'
+                    ? `CON Lazima uweke fedha kwenye escrow kwanza.\nTembelea kazimtaani.co.ke, sehemu ya Malipo.\n0. Rudi`
+                    : `CON Escrow not funded for this job.\nVisit kazimtaani.co.ke Payments tab to deposit via M-Pesa first.\n0. Back`;
             } else {
                 const appWorker = await User.findById(workerIdRaw).select('name').lean();
                 if (!appWorker) {
@@ -329,6 +333,10 @@ router.post('/', async (req, res) => {
 
             if (!job || !worker) {
                 response = s(lang, 'hireNoWorker');
+            } else if (job.paymentStatus !== 'In-Escrow') {
+                response = lang === 'sw'
+                    ? `END Lazima uweke fedha kwenye escrow kwanza.\nNenda sehemu ya Malipo kwenye tovuti yetu.\nkazimtaani.co.ke`
+                    : `END Fund escrow before hiring.\nGo to the Payments tab at kazimtaani.co.ke to deposit the job amount via M-Pesa first.`;
             } else {
                 await Job.findByIdAndUpdate(job._id, {
                     hiredWorker: worker.name, hiredWorkerId: worker._id, status: 'In Progress'

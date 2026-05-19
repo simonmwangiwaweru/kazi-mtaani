@@ -1,4 +1,3 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const request  = require('supertest');
 const mongoose = require('mongoose');
 const app      = require('./app');
@@ -6,16 +5,12 @@ const app      = require('./app');
 const User = require('../models/user');
 const Job  = require('../models/job');
 
-let mongod;
-
 beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    await mongoose.connect(mongod.getUri());
+    await mongoose.connect(process.env.TEST_MONGO_URI);
 });
 afterAll(async () => {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
-    await mongod.stop();
 });
 afterEach(async () => { await User.deleteMany({}); await Job.deleteMany({}); });
 
