@@ -152,8 +152,10 @@ router.post('/release/:jobId', protect, async (req, res) => {
             // Revert status so employer can retry
             job.paymentStatus = 'In-Escrow';
             await job.save();
-            console.error('B2C Release Error:', err.response?.data || err.message);
-            return res.status(500).json({ msg: 'Failed to initiate payment release. Please try again.' });
+            const darajaError = err.response?.data;
+            console.error('B2C Release Error:', JSON.stringify(darajaError || err.message));
+            const userMsg = darajaError?.errorMessage || darajaError?.ResultDesc || err.message || 'Unknown error';
+            return res.status(500).json({ msg: `Release failed: ${userMsg}` });
         }
 
         res.json({ msg: 'Payment release initiated. Worker will receive M-Pesa confirmation shortly.' });
@@ -196,8 +198,10 @@ router.post('/refund/:jobId', protect, async (req, res) => {
         } catch (err) {
             job.paymentStatus = 'In-Escrow';
             await job.save();
-            console.error('B2C Refund Error:', err.response?.data || err.message);
-            return res.status(500).json({ msg: 'Failed to initiate refund. Please try again.' });
+            const darajaError = err.response?.data;
+            console.error('B2C Refund Error:', JSON.stringify(darajaError || err.message));
+            const userMsg = darajaError?.errorMessage || darajaError?.ResultDesc || err.message || 'Unknown error';
+            return res.status(500).json({ msg: `Refund failed: ${userMsg}` });
         }
 
         res.json({ msg: 'Refund initiated. You will receive M-Pesa confirmation shortly.' });
