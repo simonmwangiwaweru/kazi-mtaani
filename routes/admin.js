@@ -143,4 +143,12 @@ router.delete('/verify/:userId', adminGuard, async (req, res) => {
     }
 });
 
+// GET /api/admin/doc/:filename — serve verification document to admin (bypasses ownership check)
+router.get('/doc/:filename', adminGuard, (req, res) => {
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(__dirname, '..', 'uploads', 'verification', filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'File not found.' });
+    res.sendFile(filePath);
+});
+
 module.exports = router;

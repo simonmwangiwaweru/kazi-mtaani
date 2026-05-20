@@ -698,7 +698,8 @@
 
     async function viewDoc(filename) {
         try {
-            const res = await apiFetch(`/uploads/verification/${filename}`, { headers: authHeaders() });
+            const basename = filename.split('/').pop().split('\\').pop();
+            const res = await apiFetch(`/api/admin/doc/${encodeURIComponent(basename)}`, { headers: authHeaders() });
             if (!res.ok) { admToast('error', 'Error', 'Could not load document.'); return; }
             const blob = await res.blob();
             const url  = URL.createObjectURL(blob);
@@ -750,7 +751,7 @@
         const rows = _verifications.map(u => {
             const joined = u.dateJoined ? new Date(u.dateJoined).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'}) : '—';
             const docLink = u.verificationDoc
-                ? `<button onclick="viewDoc('${encodeURIComponent(u.verificationDoc)}')" style="color:var(--green);font-size:0.82rem;background:none;border:1px solid var(--green);border-radius:6px;padding:4px 10px;cursor:pointer;">View Document</button>`
+                ? `<button onclick="viewDoc('${u.verificationDoc.replace(/'/g, "\\'")}')" style="color:var(--green);font-size:0.82rem;background:none;border:1px solid var(--green);border-radius:6px;padding:4px 10px;cursor:pointer;">View Document</button>`
                 : '—';
             return `<tr>
                 <td><div class="cell-primary">${escapeHtml(u.name)}</div><div class="cell-mono">${u.phone||'—'}</div></td>
