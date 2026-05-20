@@ -151,10 +151,21 @@
         .adm-confirm-ok     { flex:1; padding:11px; border:none; border-radius:10px; background:#ef4444; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:'Outfit',sans-serif; }
         .adm-confirm-ok:hover { opacity:0.88; }
 
+        /* Mobile bottom nav */
+        .mobile-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#1a1a2e; border-top:1px solid #2d2d44; z-index:1000; padding:6px 0 8px; }
+        .mobile-nav-items { display:flex; justify-content:space-around; }
+        .mobile-nav-btn { background:none; border:none; color:rgba(255,255,255,0.5); font-size:0.62rem; font-weight:600; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 8px; position:relative; }
+        .mobile-nav-btn.active { color:#ff6b6b; }
+        .mobile-nav-btn span:first-child { font-size:1.2rem; }
+        .mobile-nav-badge { position:absolute; top:0; right:4px; background:#ef4444; color:#fff; font-size:0.6rem; font-weight:700; padding:1px 4px; border-radius:20px; }
+        /* Pending alert banner */
+        #pendingBanner { display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:none; align-items:center; gap:12px; cursor:pointer; }
+        #pendingBanner:hover { background:#ffe69c; }
         @media (max-width: 768px) {
             .sidebar { display: none; }
-            .main-content { margin-left: 0; }
-            .page-content { padding: 20px 16px; }
+            .mobile-nav { display: block; }
+            .main-content { margin-left: 0; padding-bottom: 70px; }
+            .page-content { padding: 16px 12px; }
             .topbar { padding: 0 16px; }
             .admin-table th:nth-child(n+4),
             .admin-table td:nth-child(n+4) { display: none; }
@@ -204,6 +215,28 @@
         </div>
     </aside>
 
+    <!-- Mobile bottom navigation -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <button class="mobile-nav-btn active" id="mbn-dashboard" onclick="switchView('dashboard')">
+                <span>📊</span><span>Overview</span>
+            </button>
+            <button class="mobile-nav-btn" id="mbn-users" onclick="switchView('users')">
+                <span>👥</span><span>Users</span>
+            </button>
+            <button class="mobile-nav-btn" id="mbn-jobs" onclick="switchView('jobs')">
+                <span>💼</span><span>Jobs</span>
+            </button>
+            <button class="mobile-nav-btn" id="mbn-verifications" onclick="switchView('verifications')">
+                <span>🪪</span><span>Verify</span>
+                <span class="mobile-nav-badge" id="mobileVerifyBadge" style="display:none;"></span>
+            </button>
+            <button class="mobile-nav-btn" id="mbn-audit" onclick="switchView('audit')">
+                <span>📋</span><span>Audit</span>
+            </button>
+        </div>
+    </nav>
+
     <!-- Main -->
     <main class="main-content">
         <header class="topbar">
@@ -215,6 +248,15 @@
         </header>
 
         <div class="page-content">
+
+            <!-- Pending verification banner -->
+            <div id="pendingBanner" onclick="switchView('verifications')" style="display:none;">
+                <span style="font-size:1.4rem;">🔔</span>
+                <div>
+                    <div style="font-weight:700;font-size:0.9rem;color:#856404;" id="pendingBannerText">Pending verifications need your review</div>
+                    <div style="font-size:0.78rem;color:#856404;opacity:0.8;">Tap to review</div>
+                </div>
+            </div>
 
             <!-- ── OVERVIEW ── -->
             <div id="viewDashboard">
@@ -447,6 +489,11 @@
                 : text.includes(view);
             el.classList.toggle('active', match);
         });
+        // Update mobile bottom nav active state
+        ['dashboard','users','jobs','verifications','audit'].forEach(v => {
+            const btn = document.getElementById('mbn-' + v);
+            if (btn) btn.classList.toggle('active', v === view);
+        });
         if (view === 'users')         loadUsers();
         if (view === 'jobs')          loadAdminJobs();
         if (view === 'verifications') loadVerifications();
@@ -656,11 +703,27 @@
             const res = await apiFetch('/api/admin/verifications', { headers: authHeaders() });
             _verifications = await res.json();
             const badge = document.getElementById('verifyBadge');
+            const mobileBadge = document.getElementById('mobileVerifyBadge');
+            const banner = document.getElementById('pendingBanner');
             const cnt   = document.getElementById('verifyCount');
-            if (cnt) cnt.textContent = _verifications.length;
+            const count = _verifications.length;
+            if (cnt) cnt.textContent = count;
             if (badge) {
-                if (_verifications.length) { badge.textContent = _verifications.length; badge.style.display = 'inline'; }
+                if (count) { badge.textContent = count; badge.style.display = 'inline'; }
                 else badge.style.display = 'none';
+            }
+            if (mobileBadge) {
+                if (count) { mobileBadge.textContent = count; mobileBadge.style.display = 'inline'; }
+                else mobileBadge.style.display = 'none';
+            }
+            if (banner) {
+                if (count) {
+                    document.getElementById('pendingBannerText').textContent =
+                        `${count} worker${count > 1 ? 's' : ''} waiting for ID verification`;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
             }
             renderVerifications();
         } catch {
