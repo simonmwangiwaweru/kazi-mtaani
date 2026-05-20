@@ -243,7 +243,8 @@
                     showStatus('success', '✅ ' + (data.msg || 'Access granted! Redirecting…'));
                     if (data.user) {
                         saveSession(data);
-                        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                        const dest = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+                        setTimeout(() => window.location.href = dest, 1000);
                     }
                 } else {
                     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }

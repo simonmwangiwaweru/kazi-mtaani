@@ -304,7 +304,8 @@ router.get('/google-callback', authLimiter, async (req, res) => {
                 name: user.name, role: user.role,
                 id: user._id.toString(), phone: user.phone || ''
             })).toString('base64');
-            return res.redirect('/session-bridge.html?u=' + u + '&to=dashboard.html');
+            const dest = user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+            return res.redirect('/session-bridge.html?u=' + u + '&to=' + dest);
         }
 
         // New user — store info server-side, redirect with a short-lived key only
@@ -342,7 +343,8 @@ router.post('/google-redirect', authLimiter, async (req, res) => {
                 name: user.name, role: user.role,
                 id: user._id.toString(), phone: user.phone || ''
             })).toString('base64');
-            return res.redirect('/session-bridge.html?u=' + u + '&to=dashboard.html');
+            const dest = user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+            return res.redirect('/session-bridge.html?u=' + u + '&to=' + dest);
         }
 
         // New user — store info server-side, redirect with a short-lived key only
