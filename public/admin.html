@@ -696,6 +696,16 @@
     // ── Verifications ──
     let _verifications = [];
 
+    async function viewDoc(filename) {
+        try {
+            const res = await apiFetch(`/uploads/verification/${filename}`, { headers: authHeaders() });
+            if (!res.ok) { admToast('error', 'Error', 'Could not load document.'); return; }
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch { admToast('error', 'Error', 'Could not load document.'); }
+    }
+
     async function loadVerifications() {
         const wrap = document.getElementById('verificationsWrap');
         wrap.innerHTML = '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
@@ -739,7 +749,9 @@
         }
         const rows = _verifications.map(u => {
             const joined = u.dateJoined ? new Date(u.dateJoined).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'}) : '—';
-            const docLink = u.verificationDoc ? `<a href="${encodeURI('/'+u.verificationDoc)}" target="_blank" style="color:var(--green);font-size:0.82rem;">View Document</a>` : '—';
+            const docLink = u.verificationDoc
+                ? `<button onclick="viewDoc('${encodeURIComponent(u.verificationDoc)}')" style="color:var(--green);font-size:0.82rem;background:none;border:1px solid var(--green);border-radius:6px;padding:4px 10px;cursor:pointer;">View Document</button>`
+                : '—';
             return `<tr>
                 <td><div class="cell-primary">${escapeHtml(u.name)}</div><div class="cell-mono">${u.phone||'—'}</div></td>
                 <td><span class="role-pill role-${u.role||'worker'}">${u.role||'—'}</span></td>
