@@ -696,15 +696,9 @@
     // ── Verifications ──
     let _verifications = [];
 
-    async function viewDoc(filename) {
-        try {
-            const basename = filename.split('/').pop().split('\\').pop();
-            const res = await apiFetch(`/api/admin/doc/${encodeURIComponent(basename)}`, { headers: authHeaders() });
-            if (!res.ok) { admToast('error', 'Error', 'Could not load document.'); return; }
-            const blob = await res.blob();
-            const url  = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-        } catch { admToast('error', 'Error', 'Could not load document.'); }
+    function viewDoc(url) {
+        if (!url) { admToast('error', 'Error', 'No document on file.'); return; }
+        window.open(url, '_blank');
     }
 
     async function loadVerifications() {

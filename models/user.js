@@ -43,9 +43,10 @@ const UserSchema = new mongoose.Schema({
         enum: ['none', 'pending', 'verified', 'rejected'],
         default: 'none'
     },
-    verificationDoc:  { type: String, default: '' },   // uploaded file path
-    verificationNote: { type: String, default: '' },   // admin rejection reason
-    certificates:     { type: [String], default: [] }, // professional certificate filenames
+    verificationDoc:         { type: String, default: '' },  // Cloudinary secure URL
+    verificationDocPublicId: { type: String, default: '' },  // Cloudinary public_id for deletion
+    verificationNote:        { type: String, default: '' },  // admin rejection reason
+    certificates:            { type: [String], default: [] }, // Cloudinary URLs
 
     // PASSWORD RESET
     resetOTP:       { type: String },

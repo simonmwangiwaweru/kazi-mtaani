@@ -2,11 +2,18 @@ const express    = require('express');
 const router     = express.Router();
 const path       = require('path');
 const fs         = require('fs');
+const cloudinary = require('cloudinary').v2;
 const User       = require('../models/user');
 const Job        = require('../models/job');
 const AuditLog   = require('../models/AuditLog');
 const adminGuard = require('../middleware/admin');
 const { createNotification } = require('./notifications');
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // GET /api/admin/stats
 router.get('/stats', adminGuard, async (req, res) => {
@@ -118,15 +125,15 @@ router.delete('/verify/:userId', adminGuard, async (req, res) => {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ msg: 'User not found.' });
 
-        // Delete the uploaded document
-        if (user.verificationDoc) {
-            const docPath = path.join(__dirname, '..', 'uploads', 'verification', path.basename(user.verificationDoc));
-            if (fs.existsSync(docPath)) fs.unlinkSync(docPath);
+        // Delete from Cloudinary
+        if (user.verificationDocPublicId) {
+            await cloudinary.uploader.destroy(user.verificationDocPublicId, { resource_type: 'image' }).catch(() => {});
         }
 
-        user.verificationStatus = 'rejected';
-        user.verificationDoc    = '';
-        user.verificationNote   = reason || 'Document could not be verified.';
+        user.verificationStatus      = 'rejected';
+        user.verificationDoc         = '';
+        user.verificationDocPublicId = '';
+        user.verificationNote        = reason || 'Document could not be verified.';
         await user.save();
 
         createNotification(user._id, 'general', 'Verification Update',
@@ -141,14 +148,6 @@ router.delete('/verify/:userId', adminGuard, async (req, res) => {
     } catch (err) {
         res.status(500).json({ msg: 'Server error.' });
     }
-});
-
-// GET /api/admin/doc/:filename — serve verification document to admin (bypasses ownership check)
-router.get('/doc/:filename', adminGuard, (req, res) => {
-    const filename = path.basename(req.params.filename);
-    const filePath = path.join(__dirname, '..', 'uploads', 'verification', filename);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'File not found.' });
-    res.sendFile(filePath);
 });
 
 module.exports = router;
