@@ -138,14 +138,6 @@ app.get('/api/auth/dbcheck', (_req, res) => {
 });
 
 // 4. Routes
-// ONE-TIME admin setup — REMOVE AFTER USE
-app.post('/setup-admin-kazi2026', async (req, res) => {
-    const User = require('./models/user');
-    const existing = await User.findOne({ role: 'admin' });
-    if (existing) return res.json({ msg: 'Admin exists', phone: existing.phone });
-    await User.create({ name: 'Admin', phone: '254700000001', password: 'Admin@Kazi2026', role: 'admin', tokenVersion: 0, language: 'en' });
-    res.json({ msg: 'Admin created! Phone: 254700000001 Password: Admin@Kazi2026' });
-});
 
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/jobs',          require('./routes/jobs'));
