@@ -1,17 +1,16 @@
 /**
- * ESCROW ROUTES — Kazi Mtaani (Secured)
+ * ESCROW ROUTES — Kazi Mtaani (IntaSend)
  */
-const express       = require('express');
-const router        = express.Router();
-const Job           = require('../models/job');
-const User          = require('../models/user');
-const { stkPush, b2cPayout }  = require('../services/daraja');
-const protect       = require('../middleware/auth');
-const mpesaIpGuard  = require('../middleware/mpesa');
-const { createNotification }  = require('./notifications');
+const express          = require('express');
+const router           = express.Router();
+const Job              = require('../models/job');
+const User             = require('../models/user');
+const { stkPush, mpesaPayout } = require('../services/intasend');
+const protect          = require('../middleware/auth');
+const intasendGuard    = require('../middleware/intasend');
+const { createNotification } = require('./notifications');
 
 // ─── Phone format validation helper ──────────────────────────────────────────
-// Accepts 254XXXXXXXXX (12 digits, Kenyan mobile prefixes 7xx/1xx)
 function isValidPhone(phone) {
     return /^2547\d{8}$|^2541\d{8}$/.test(phone);
 }
@@ -34,7 +33,6 @@ router.post('/pay/:jobId', protect, async (req, res) => {
         const job = await Job.findById(req.params.jobId);
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
 
-        // Ownership check
         if (job.employer && job.employer.toString() !== req.user.id) {
             return res.status(403).json({ msg: 'Not authorized for this job.' });
         }
@@ -46,48 +44,44 @@ router.post('/pay/:jobId', protect, async (req, res) => {
         job.employerPhone = employerPhone;
         await job.save();
 
-        const darajaResponse = await stkPush(employerPhone, job.pay, job._id);
+        const result = await stkPush(employerPhone, job.pay, job._id);
 
-        // Store CheckoutRequestID server-side only — never sent to client
-        job.checkoutRequestId = darajaResponse.CheckoutRequestID;
+        // Store IntaSend invoice_id for matching the callback
+        job.checkoutRequestId = result.invoice?.invoice_id || result.invoice_id || '';
         await job.save();
 
         res.json({ msg: 'M-Pesa prompt sent! Check your phone.' });
     } catch (err) {
         console.error('STK Push Error:', err.response?.data || err.message);
-        res.status(500).json({ msg: 'Failed to initiate payment.' });
+        const msg = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to initiate payment.';
+        res.status(500).json({ msg });
     }
 });
 
-// ROUTE 2: STK Push Callback (webhook from Daraja — no JWT, IP-guarded)
-router.post('/callback', mpesaIpGuard, async (req, res) => {
+// ROUTE 2: STK Push Callback (webhook from IntaSend — signature-guarded)
+router.post('/callback', intasendGuard, async (req, res) => {
     try {
-        const callbackData = req.body.Body?.stkCallback;
-        if (!callbackData) {
-            return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-        }
+        console.log('IntaSend STK Callback:', JSON.stringify(req.body, null, 2));
 
-        const resultCode       = callbackData.ResultCode;
-        const checkoutRequestID = callbackData.CheckoutRequestID;
-        const metadata         = callbackData.CallbackMetadata?.Item || [];
-        const receiptNumber    = metadata.find(i => i.Name === 'MpesaReceiptNumber')?.Value;
+        const { invoice_id, state, api_ref, mpesa_reference } = req.body;
 
-        console.log('Daraja Callback:', JSON.stringify(callbackData, null, 2));
-
-        if (resultCode === 0 && checkoutRequestID) {
-            // SECURE MATCH: Use CheckoutRequestID instead of amount
-            const matchedJob = await Job.findOne({
-                checkoutRequestId: checkoutRequestID,
+        if (state === 'COMPLETE' && invoice_id) {
+            let matchedJob = await Job.findOne({
+                checkoutRequestId: invoice_id,
                 paymentStatus: 'Pending'
             });
 
-            if (matchedJob) {
-                matchedJob.paymentStatus     = 'In-Escrow';
-                matchedJob.mpesaReceiptNumber = receiptNumber;
-                await matchedJob.save();
-                console.log(`Job ${matchedJob._id} is now In-Escrow. Receipt: ${receiptNumber}`);
+            // Fallback: match by api_ref = "JOB-{jobId}"
+            if (!matchedJob && api_ref && api_ref.startsWith('JOB-')) {
+                matchedJob = await Job.findOne({ _id: api_ref.slice(4), paymentStatus: 'Pending' });
+            }
 
-                // Notify the hired worker that escrow is funded
+            if (matchedJob) {
+                matchedJob.paymentStatus      = 'In-Escrow';
+                matchedJob.mpesaReceiptNumber = mpesa_reference || '';
+                await matchedJob.save();
+                console.log(`Job ${matchedJob._id} is now In-Escrow. Ref: ${mpesa_reference}`);
+
                 if (matchedJob.hiredWorkerId) {
                     createNotification(
                         matchedJob.hiredWorkerId,
@@ -98,16 +92,16 @@ router.post('/callback', mpesaIpGuard, async (req, res) => {
                     );
                 }
             } else {
-                console.log('No matching pending job for CheckoutRequestID:', checkoutRequestID);
+                console.log('No matching pending job for invoice_id:', invoice_id);
             }
         } else {
-            console.log('Payment failed or cancelled:', callbackData.ResultDesc);
+            console.log('STK Push not complete:', state, req.body);
         }
 
-        res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+        res.json({ status: 'ok' });
     } catch (err) {
-        console.error('Callback Error:', err.message);
-        res.status(500).json({ ResultCode: 1, ResultDesc: 'Error' });
+        console.error('STK Callback Error:', err.message);
+        res.status(500).json({ status: 'error' });
     }
 });
 
@@ -121,7 +115,6 @@ router.post('/release/:jobId', protect, async (req, res) => {
         const job = await Job.findById(req.params.jobId);
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
 
-        // Ownership check
         if (job.employer && job.employer.toString() !== req.user.id) {
             return res.status(403).json({ msg: 'Not authorized for this job.' });
         }
@@ -134,27 +127,25 @@ router.post('/release/:jobId', protect, async (req, res) => {
             return res.status(400).json({ msg: 'No worker hired for this job.' });
         }
 
-        // Get worker's phone from DB — never trust client input for payment destination
         const worker = await User.findById(job.hiredWorkerId).select('phone name');
         if (!worker) return res.status(404).json({ msg: 'Hired worker account not found.' });
         if (!worker.phone) return res.status(400).json({ msg: 'Hired worker has no phone on record.' });
 
-        // Transition to Releasing — prevents duplicate release attempts
         job.paymentStatus = 'Releasing';
         await job.save();
 
         const remarks = `Payment for Kazi: ${job.title}`;
         try {
-            await b2cPayout(worker.phone, job.pay, job._id, remarks);
-            job.workerPhone = worker.phone;
+            const result = await mpesaPayout(worker.phone, job.pay, worker.name, remarks);
+            job.workerPhone      = worker.phone;
+            job.payoutTrackingId = result.tracking_id || '';
             await job.save();
         } catch (err) {
-            // Revert status so employer can retry
             job.paymentStatus = 'In-Escrow';
             await job.save();
-            const darajaError = err.response?.data;
-            console.error('B2C Release Error:', JSON.stringify(darajaError || err.message));
-            const userMsg = darajaError?.errorMessage || darajaError?.ResultDesc || err.message || 'Unknown error';
+            const errData = err.response?.data;
+            console.error('Payout Release Error:', JSON.stringify(errData || err.message));
+            const userMsg = errData?.detail || errData?.message || err.message || 'Unknown error';
             return res.status(500).json({ msg: `Release failed: ${userMsg}` });
         }
 
@@ -175,7 +166,6 @@ router.post('/refund/:jobId', protect, async (req, res) => {
         const job = await Job.findById(req.params.jobId);
         if (!job) return res.status(404).json({ msg: 'Job not found.' });
 
-        // Ownership check
         if (job.employer && job.employer.toString() !== req.user.id) {
             return res.status(403).json({ msg: 'Not authorized for this job.' });
         }
@@ -188,19 +178,22 @@ router.post('/refund/:jobId', protect, async (req, res) => {
             return res.status(400).json({ msg: 'Employer phone not found on record.' });
         }
 
-        // Transition to Refunding — prevents duplicate refund attempts
+        const employer = await User.findById(job.employer).select('name');
+        const remarks  = `Refund for cancelled Kazi: ${job.title}`;
+
         job.paymentStatus = 'Refunding';
         await job.save();
 
-        const remarks = `Refund for cancelled Kazi: ${job.title}`;
         try {
-            await b2cPayout(job.employerPhone, job.pay, job._id, remarks);
+            const result = await mpesaPayout(job.employerPhone, job.pay, employer?.name || 'Employer', remarks);
+            job.payoutTrackingId = result.tracking_id || '';
+            await job.save();
         } catch (err) {
             job.paymentStatus = 'In-Escrow';
             await job.save();
-            const darajaError = err.response?.data;
-            console.error('B2C Refund Error:', JSON.stringify(darajaError || err.message));
-            const userMsg = darajaError?.errorMessage || darajaError?.ResultDesc || err.message || 'Unknown error';
+            const errData = err.response?.data;
+            console.error('Payout Refund Error:', JSON.stringify(errData || err.message));
+            const userMsg = errData?.detail || errData?.message || err.message || 'Unknown error';
             return res.status(500).json({ msg: `Refund failed: ${userMsg}` });
         }
 
@@ -211,33 +204,21 @@ router.post('/refund/:jobId', protect, async (req, res) => {
     }
 });
 
-// ROUTE 5: B2C Result Callback (webhook — no JWT, IP-guarded)
-// Confirms whether a release or refund B2C payout actually succeeded
-router.post('/b2c-callback', mpesaIpGuard, async (req, res) => {
+// ROUTE 5: Payout Result Callback (webhook from IntaSend — signature-guarded)
+router.post('/payout-callback', intasendGuard, async (req, res) => {
     try {
-        const result = req.body?.Result;
-        if (!result) return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+        console.log('IntaSend Payout Callback:', JSON.stringify(req.body, null, 2));
 
-        console.log('B2C Result:', JSON.stringify(result, null, 2));
+        const { tracking_id, status } = req.body;
+        if (!tracking_id) return res.json({ status: 'ok' });
 
-        const resultCode = result.ResultCode;
+        const job = await Job.findOne({ payoutTrackingId: tracking_id });
+        if (!job) return res.json({ status: 'ok' });
 
-        // Parse jobId from the Occasion field we set: "JOB-{jobId}"
-        const refItems = result.ReferenceData?.ReferenceItem;
-        const occasion = Array.isArray(refItems)
-            ? refItems.find(i => i.Key === 'Occasion')?.Value
-            : (refItems?.Key === 'Occasion' ? refItems.Value : null);
+        // IntaSend payout success statuses
+        const succeeded = ['TS', 'Complete', 'COMPLETE', 'SUCCESS'].includes(status);
 
-        if (!occasion || !occasion.startsWith('JOB-')) {
-            return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-        }
-
-        const jobId = occasion.slice(4);
-        const job   = await Job.findById(jobId);
-        if (!job) return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-
-        if (resultCode === 0) {
-            // Payout succeeded
+        if (succeeded) {
             if (job.paymentStatus === 'Releasing') {
                 job.paymentStatus = 'Released';
                 job.status        = 'Completed';
@@ -268,55 +249,26 @@ router.post('/b2c-callback', mpesaIpGuard, async (req, res) => {
                 );
             }
         } else {
-            // Payout failed — revert to In-Escrow so employer can retry
             if (job.paymentStatus === 'Releasing' || job.paymentStatus === 'Refunding') {
-                const wasRefund = job.paymentStatus === 'Refunding';
+                const wasRefund   = job.paymentStatus === 'Refunding';
                 job.paymentStatus = 'In-Escrow';
                 await job.save();
-                console.error(`B2C failed for job ${job._id}: ${result.ResultDesc}`);
+                console.error(`Payout failed for job ${job._id}: status=${status}`);
 
-                // Notify employer that the payout failed
                 createNotification(
                     job.employer,
                     'general',
                     wasRefund ? 'Refund Failed ⚠️' : 'Payment Release Failed ⚠️',
-                    `${wasRefund ? 'Refund' : 'Payment release'} for "${job.title}" failed: ${result.ResultDesc}. Please try again from your dashboard.`,
+                    `${wasRefund ? 'Refund' : 'Payment release'} for "${job.title}" failed. Please try again from your dashboard.`,
                     'payments'
                 );
             }
         }
 
-        res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+        res.json({ status: 'ok' });
     } catch (err) {
-        console.error('B2C Callback Error:', err.message);
-        res.status(500).json({ ResultCode: 1, ResultDesc: 'Error' });
-    }
-});
-
-// ROUTE 6: B2C Timeout Callback — revert to In-Escrow so employer can retry (IP-guarded)
-router.post('/b2c-timeout', mpesaIpGuard, async (req, res) => {
-    try {
-        console.log('B2C Timeout:', JSON.stringify(req.body, null, 2));
-
-        const refItems = req.body?.Request?.ReferenceData?.ReferenceItem;
-        const occasion = Array.isArray(refItems)
-            ? refItems.find(i => i.Key === 'Occasion')?.Value
-            : (refItems?.Key === 'Occasion' ? refItems.Value : null);
-
-        if (occasion && occasion.startsWith('JOB-')) {
-            const jobId = occasion.slice(4);
-            const job   = await Job.findById(jobId);
-            if (job && (job.paymentStatus === 'Releasing' || job.paymentStatus === 'Refunding')) {
-                job.paymentStatus = 'In-Escrow';
-                await job.save();
-                console.log(`Job ${job._id} reverted to In-Escrow after B2C timeout.`);
-            }
-        }
-
-        res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-    } catch (err) {
-        console.error('B2C Timeout Error:', err.message);
-        res.status(500).json({ ResultCode: 1, ResultDesc: 'Error' });
+        console.error('Payout Callback Error:', err.message);
+        res.status(500).json({ status: 'error' });
     }
 });
 

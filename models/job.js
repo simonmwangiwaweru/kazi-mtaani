@@ -35,8 +35,9 @@ const JobSchema = new mongoose.Schema({
 
     // ESCROW FIELDS
     employerPhone:     { type: String, default: '' },   // Phone that paid into escrow (for refunds)
-    workerPhone:       { type: String, default: '' },   // Phone that received B2C payout
-    checkoutRequestId: { type: String, default: '' },   // STK Push tracking ID from Daraja
+    workerPhone:       { type: String, default: '' },   // Phone that received payout
+    checkoutRequestId: { type: String, default: '' },   // IntaSend invoice_id (STK Push)
+    payoutTrackingId:  { type: String, default: '' },   // IntaSend tracking_id (payout/refund)
 
     createdAt: { type: Date, default: Date.now }
 });
