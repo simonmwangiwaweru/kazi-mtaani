@@ -150,4 +150,80 @@ router.delete('/verify/:userId', adminGuard, async (req, res) => {
     }
 });
 
+// GET /api/admin/payouts — list jobs pending manual release or refund
+router.get('/payouts', adminGuard, async (req, res) => {
+    try {
+        const jobs = await Job.find({
+            paymentStatus: { $in: ['Pending Release', 'Pending Refund'] }
+        }).populate('employer', 'name phone').populate('hiredWorkerId', 'name phone').sort({ createdAt: -1 });
+        res.json(jobs);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
+// POST /api/admin/payouts/:jobId/confirm-release — admin confirms they sent money to worker
+router.post('/payouts/:jobId/confirm-release', adminGuard, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.jobId);
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+        if (job.paymentStatus !== 'Pending Release') {
+            return res.status(400).json({ msg: `Job is not pending release.` });
+        }
+
+        job.paymentStatus = 'Released';
+        job.status        = 'Completed';
+        await job.save();
+
+        if (job.hiredWorkerId) {
+            createNotification(
+                job.hiredWorkerId,
+                'payment_released',
+                'Payment Released to Your M-Pesa! 💰',
+                `KES ${Number(job.pay).toLocaleString()} for "${job.title}" has been sent to your M-Pesa. Check your phone!`,
+                'payments'
+            );
+        }
+
+        AuditLog.create({ userId: req.user.id, userName: req.user.name,
+            action: 'payout_confirmed', entity: 'job', entityId: job._id.toString(),
+            details: `Released KES ${job.pay} for "${job.title}"` }).catch(() => {});
+
+        res.json({ msg: 'Release confirmed. Worker has been notified.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
+// POST /api/admin/payouts/:jobId/confirm-refund — admin confirms they sent refund to employer
+router.post('/payouts/:jobId/confirm-refund', adminGuard, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.jobId);
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+        if (job.paymentStatus !== 'Pending Refund') {
+            return res.status(400).json({ msg: `Job is not pending refund.` });
+        }
+
+        job.paymentStatus = 'Refunded';
+        job.status        = 'Open';
+        await job.save();
+
+        createNotification(
+            job.employer,
+            'refunded',
+            'Refund Processed ↩️',
+            `KES ${Number(job.pay).toLocaleString()} for "${job.title}" has been refunded to your M-Pesa.`,
+            'payments'
+        );
+
+        AuditLog.create({ userId: req.user.id, userName: req.user.name,
+            action: 'refund_confirmed', entity: 'job', entityId: job._id.toString(),
+            details: `Refunded KES ${job.pay} for "${job.title}"` }).catch(() => {});
+
+        res.json({ msg: 'Refund confirmed. Employer has been notified.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
 module.exports = router;

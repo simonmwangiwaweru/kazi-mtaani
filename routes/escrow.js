@@ -131,25 +131,23 @@ router.post('/release/:jobId', protect, async (req, res) => {
         if (!worker) return res.status(404).json({ msg: 'Hired worker account not found.' });
         if (!worker.phone) return res.status(400).json({ msg: 'Hired worker has no phone on record.' });
 
-        job.paymentStatus = 'Releasing';
+        job.paymentStatus = 'Pending Release';
+        job.workerPhone   = worker.phone;
         await job.save();
 
-        const remarks = `Payment for Kazi: ${job.title}`;
-        try {
-            const result = await mpesaPayout(worker.phone, job.pay, worker.name, remarks);
-            job.workerPhone      = worker.phone;
-            job.payoutTrackingId = result.tracking_id || '';
-            await job.save();
-        } catch (err) {
-            job.paymentStatus = 'In-Escrow';
-            await job.save();
-            const errData = err.response?.data;
-            console.error('Payout Release Error:', JSON.stringify(errData || err.message));
-            const userMsg = errData?.detail || errData?.message || err.message || 'Unknown error';
-            return res.status(500).json({ msg: `Release failed: ${userMsg}` });
-        }
+        // Notify admin to manually send the payout
+        const adminUsers = await User.find({ role: 'admin' }).select('_id');
+        adminUsers.forEach(admin => {
+            createNotification(
+                admin._id,
+                'general',
+                'Payout Required 💸',
+                `Employer requested release of KES ${Number(job.pay).toLocaleString()} for "${job.title}" to ${worker.name} (${worker.phone}). Send from IntaSend dashboard and confirm.`,
+                'payments'
+            );
+        });
 
-        res.json({ msg: 'Payment release initiated. Worker will receive M-Pesa confirmation shortly.' });
+        res.json({ msg: 'Release requested! Admin will process and send your payment shortly.' });
     } catch (err) {
         console.error('Release Error:', err.response?.data || err.message);
         res.status(500).json({ msg: 'Failed to release payment.' });
@@ -179,25 +177,23 @@ router.post('/refund/:jobId', protect, async (req, res) => {
         }
 
         const employer = await User.findById(job.employer).select('name');
-        const remarks  = `Refund for cancelled Kazi: ${job.title}`;
 
-        job.paymentStatus = 'Refunding';
+        job.paymentStatus = 'Pending Refund';
         await job.save();
 
-        try {
-            const result = await mpesaPayout(job.employerPhone, job.pay, employer?.name || 'Employer', remarks);
-            job.payoutTrackingId = result.tracking_id || '';
-            await job.save();
-        } catch (err) {
-            job.paymentStatus = 'In-Escrow';
-            await job.save();
-            const errData = err.response?.data;
-            console.error('Payout Refund Error:', JSON.stringify(errData || err.message));
-            const userMsg = errData?.detail || errData?.message || err.message || 'Unknown error';
-            return res.status(500).json({ msg: `Refund failed: ${userMsg}` });
-        }
+        // Notify admin to manually send the refund
+        const adminUsers = await User.find({ role: 'admin' }).select('_id');
+        adminUsers.forEach(admin => {
+            createNotification(
+                admin._id,
+                'general',
+                'Refund Required ↩️',
+                `Employer requested refund of KES ${Number(job.pay).toLocaleString()} for "${job.title}" to ${employer?.name || 'Employer'} (${job.employerPhone}). Send from IntaSend dashboard and confirm.`,
+                'payments'
+            );
+        });
 
-        res.json({ msg: 'Refund initiated. You will receive M-Pesa confirmation shortly.' });
+        res.json({ msg: 'Refund requested! Admin will process and return your money shortly.' });
     } catch (err) {
         console.error('Refund Error:', err.response?.data || err.message);
         res.status(500).json({ msg: 'Failed to refund.' });

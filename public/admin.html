@@ -196,6 +196,9 @@
             <button class="nav-item" onclick="switchView('verifications')">
                 <span>🪪</span> Verifications <span id="verifyBadge" style="display:none;background:#ef4444;color:white;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;margin-left:4px;"></span>
             </button>
+            <button class="nav-item" onclick="switchView('payouts')">
+                <span>💸</span> Payouts <span id="payoutBadge" style="display:none;background:#ef4444;color:white;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;margin-left:4px;"></span>
+            </button>
             <button class="nav-item" onclick="switchView('audit')">
                 <span>📋</span> Audit Log
             </button>
@@ -230,6 +233,10 @@
             <button class="mobile-nav-btn" id="mbn-verifications" onclick="switchView('verifications')">
                 <span>🪪</span><span>Verify</span>
                 <span class="mobile-nav-badge" id="mobileVerifyBadge" style="display:none;"></span>
+            </button>
+            <button class="mobile-nav-btn" id="mbn-payouts" onclick="switchView('payouts')">
+                <span>💸</span><span>Payouts</span>
+                <span class="mobile-nav-badge" id="mobilePayoutBadge" style="display:none;"></span>
             </button>
             <button class="mobile-nav-btn" id="mbn-audit" onclick="switchView('audit')">
                 <span>📋</span><span>Audit</span>
@@ -341,6 +348,20 @@
                         <button onclick="loadVerifications()" class="btn-ghost" style="padding:8px 14px;font-size:0.85rem;">🔄 Refresh</button>
                     </div>
                     <div id="verificationsWrap">
+                        <div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAYOUTS ── -->
+            <div id="viewPayouts" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title">💸 Pending Payouts <span class="count-badge" id="payoutCount">0</span></div>
+                        <button onclick="loadPayouts()" class="btn-ghost" style="padding:8px 14px;font-size:0.85rem;">🔄 Refresh</button>
+                    </div>
+                    <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:16px;">Send the money manually from your IntaSend dashboard, then click Confirm below.</p>
+                    <div id="payoutsWrap">
                         <div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>
                     </div>
                 </div>
@@ -473,11 +494,11 @@
     // ── View switching ──
     let _currentView = 'dashboard';
     const viewTitles = { dashboard: '📊 Overview', users: '👥 Users', jobs: '💼 Jobs',
-        verifications: '🪪 Verifications', audit: '📋 Audit Log' };
+        verifications: '🪪 Verifications', payouts: '💸 Payouts', audit: '📋 Audit Log' };
 
     function switchView(view) {
         _currentView = view;
-        ['dashboard', 'users', 'jobs', 'verifications', 'audit'].forEach(v => {
+        ['dashboard', 'users', 'jobs', 'verifications', 'payouts', 'audit'].forEach(v => {
             const el = document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1));
             if (el) el.style.display = v === view ? 'block' : 'none';
         });
@@ -490,13 +511,14 @@
             el.classList.toggle('active', match);
         });
         // Update mobile bottom nav active state
-        ['dashboard','users','jobs','verifications','audit'].forEach(v => {
+        ['dashboard','users','jobs','verifications','payouts','audit'].forEach(v => {
             const btn = document.getElementById('mbn-' + v);
             if (btn) btn.classList.toggle('active', v === view);
         });
         if (view === 'users')         loadUsers();
         if (view === 'jobs')          loadAdminJobs();
         if (view === 'verifications') loadVerifications();
+        if (view === 'payouts')       loadPayouts();
         if (view === 'audit')         loadAuditLog();
     }
 
@@ -793,6 +815,60 @@
     let _auditPage = 1;
     const AUDIT_LIMIT = 30;
 
+    async function loadPayouts() {
+        const wrap = document.getElementById('payoutsWrap');
+        wrap.innerHTML = '<div class="table-state"><div class="icon">⏳</div><p>Loading…</p></div>';
+        const res = await apiFetch('/api/admin/payouts', { headers: authHeaders() });
+        if (!res.ok) { wrap.innerHTML = '<div class="table-state"><p>Failed to load.</p></div>'; return; }
+        const jobs = await res.json();
+
+        const count = jobs.length;
+        document.getElementById('payoutCount').textContent = count;
+        document.getElementById('payoutBadge').textContent = count;
+        document.getElementById('payoutBadge').style.display = count ? 'inline' : 'none';
+        document.getElementById('mobilePayoutBadge').textContent = count;
+        document.getElementById('mobilePayoutBadge').style.display = count ? 'inline' : 'none';
+
+        if (!count) {
+            wrap.innerHTML = '<div class="table-state"><div class="icon">✅</div><p>No pending payouts.</p></div>';
+            return;
+        }
+
+        const rows = jobs.map(j => {
+            const isRelease = j.paymentStatus === 'Pending Release';
+            const recipient = isRelease
+                ? `${j.hiredWorkerId?.name || '—'} (${j.workerPhone || j.hiredWorkerId?.phone || '—'})`
+                : `${j.employer?.name || '—'} (${j.employerPhone || '—'})`;
+            const type = isRelease
+                ? `<span style="color:#16a34a;font-weight:600;">Release to Worker</span>`
+                : `<span style="color:#dc2626;font-weight:600;">Refund to Employer</span>`;
+            const confirmBtn = isRelease
+                ? `<button onclick="confirmPayout('${j._id}','release')" style="background:#16a34a;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Release</button>`
+                : `<button onclick="confirmPayout('${j._id}','refund')" style="background:#dc2626;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Refund</button>`;
+            return `<tr>
+                <td><div class="cell-primary">${escapeHtml(j.title)}</div></td>
+                <td>${type}</td>
+                <td><strong>KES ${Number(j.pay).toLocaleString()}</strong></td>
+                <td><div class="cell-primary">${escapeHtml(recipient)}</div></td>
+                <td>${confirmBtn}</td>
+            </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `<div class="table-container"><table class="data-table">
+            <thead><tr><th>Job</th><th>Type</th><th>Amount</th><th>Send To</th><th>Action</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+
+    async function confirmPayout(jobId, type) {
+        const label = type === 'release' ? 'release' : 'refund';
+        if (!confirm(`Have you already sent the money from IntaSend? Click OK to confirm the ${label}.`)) return;
+        const res = await apiFetch(`/api/admin/payouts/${jobId}/confirm-${label}`, { method: 'POST', headers: authHeaders() });
+        const data = await res.json();
+        if (res.ok) { admToast('success', 'Done', data.msg); loadPayouts(); }
+        else admToast('error', 'Error', data.msg);
+    }
+
     async function loadAuditLog(page) {
         if (page) _auditPage = page;
         const wrap = document.getElementById('auditWrap');
@@ -856,9 +932,10 @@
         if (_currentView === 'audit')         loadAuditLog();
     }
 
-    // Initial load — also update verification badge count
+    // Initial load — pre-load badges
     loadStats();
-    loadVerifications(); // pre-load badge
+    loadVerifications();
+    loadPayouts();
 </script>
 </body>
 </html>
