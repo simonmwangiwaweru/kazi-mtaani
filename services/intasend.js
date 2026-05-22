@@ -42,23 +42,37 @@ async function mpesaPayout(phone, amount, name, narrative) {
     const api = client();
 
     // Step 1: initiate
-    const { data } = await api.post('/api/v1/send-money/mpesa/', {
-        currency: 'KES',
-        transactions: [{
-            name:      name || 'Recipient',
-            account:   phone,
-            amount:    Math.round(Number(amount)),
-            narrative: narrative || 'Kazi Mtaani payment',
-        }],
-    });
+    let data;
+    try {
+        const res = await api.post('/api/v1/send-money/mpesa/', {
+            currency: 'KES',
+            transactions: [{
+                name:      name || 'Recipient',
+                account:   phone,
+                amount:    Math.round(Number(amount)),
+                narrative: narrative || 'Kazi Mtaani payment',
+            }],
+        });
+        data = res.data;
+        console.log('IntaSend send-money response:', JSON.stringify(data, null, 2));
+    } catch (err) {
+        console.error('IntaSend send-money error:', JSON.stringify(err.response?.data || err.message, null, 2));
+        throw err;
+    }
 
     // Step 2: approve (IntaSend requires explicit approval before sending)
-    await api.post('/api/v1/send-money/approve/', {
-        tracking_id: data.tracking_id,
-        nonce:       data.nonce,
-    });
+    try {
+        const approveRes = await api.post('/api/v1/send-money/approve/', {
+            tracking_id: data.tracking_id,
+            nonce:       data.nonce,
+        });
+        console.log('IntaSend approve response:', JSON.stringify(approveRes.data, null, 2));
+    } catch (err) {
+        console.error('IntaSend approve error:', JSON.stringify(err.response?.data || err.message, null, 2));
+        throw err;
+    }
 
-    return data; // { tracking_id, nonce, status, transactions }
+    return data;
 }
 
 module.exports = { stkPush, mpesaPayout };
