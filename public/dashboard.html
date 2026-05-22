@@ -1686,7 +1686,7 @@
         const iconWrap = document.getElementById('confirmIconWrap');
         const okBtn    = document.getElementById('confirmOkBtn');
         document.getElementById('confirmTitle').textContent = title;
-        document.getElementById('confirmMsg').textContent   = msg;
+        document.getElementById('confirmMsg').innerHTML     = msg;
 
         const iconMap = {
             danger:  { cls: 'ci-danger', col: '#ef4444', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>` },
