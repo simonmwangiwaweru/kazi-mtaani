@@ -835,16 +835,20 @@
         }
 
         const rows = jobs.map(j => {
-            const isRelease = j.paymentStatus === 'Pending Release';
-            const recipient = isRelease
-                ? `${j.hiredWorkerId?.name || '—'} (${j.workerPhone || j.hiredWorkerId?.phone || '—'})`
-                : `${j.employer?.name || '—'} (${j.employerPhone || '—'})`;
-            const type = isRelease
-                ? `<span style="color:#16a34a;font-weight:600;">Release to Worker</span>`
-                : `<span style="color:#dc2626;font-weight:600;">Refund to Employer</span>`;
-            const confirmBtn = isRelease
-                ? `<button onclick="confirmPayout('${j._id}','release')" style="background:#16a34a;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Release</button>`
-                : `<button onclick="confirmPayout('${j._id}','refund')" style="background:#dc2626;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Refund</button>`;
+            let type, recipient, confirmBtn;
+            if (j.paymentStatus === 'Pending Payment') {
+                type = `<span style="color:#d97706;font-weight:600;">⏳ Awaiting Your Receipt</span>`;
+                recipient = `From: ${j.employer?.name || '—'} (${j.employerPhone || j.employer?.phone || '—'})`;
+                confirmBtn = `<button onclick="confirmPayout('${j._id}','payment')" style="background:#d97706;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Received</button>`;
+            } else if (j.paymentStatus === 'Pending Release') {
+                type = `<span style="color:#16a34a;font-weight:600;">💸 Release to Worker</span>`;
+                recipient = `To: ${j.hiredWorkerId?.name || '—'} (${j.workerPhone || j.hiredWorkerId?.phone || '—'})`;
+                confirmBtn = `<button onclick="confirmPayout('${j._id}','release')" style="background:#16a34a;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Release</button>`;
+            } else {
+                type = `<span style="color:#dc2626;font-weight:600;">↩️ Refund to Employer</span>`;
+                recipient = `To: ${j.employer?.name || '—'} (${j.employerPhone || '—'})`;
+                confirmBtn = `<button onclick="confirmPayout('${j._id}','refund')" style="background:#dc2626;color:white;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Confirm Refund</button>`;
+            }
             return `<tr>
                 <td><div class="cell-primary">${escapeHtml(j.title)}</div></td>
                 <td>${type}</td>
@@ -861,9 +865,13 @@
     }
 
     async function confirmPayout(jobId, type) {
-        const label = type === 'release' ? 'release' : 'refund';
-        if (!confirm(`Have you already sent the money from IntaSend? Click OK to confirm the ${label}.`)) return;
-        const res = await apiFetch(`/api/admin/payouts/${jobId}/confirm-${label}`, { method: 'POST', headers: authHeaders() });
+        const messages = {
+            payment: 'Have you received the M-PESA payment from the employer?',
+            release: 'Have you already sent the money to the worker via M-PESA?',
+            refund:  'Have you already refunded the money to the employer via M-PESA?'
+        };
+        if (!confirm(messages[type])) return;
+        const res = await apiFetch(`/api/admin/payouts/${jobId}/confirm-${type}`, { method: 'POST', headers: authHeaders() });
         const data = await res.json();
         if (res.ok) { admToast('success', 'Done', data.msg); loadPayouts(); }
         else admToast('error', 'Error', data.msg);

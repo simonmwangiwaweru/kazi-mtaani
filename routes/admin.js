@@ -150,13 +150,53 @@ router.delete('/verify/:userId', adminGuard, async (req, res) => {
     }
 });
 
-// GET /api/admin/payouts — list jobs pending manual release or refund
+// GET /api/admin/payouts — list all jobs needing manual admin action
 router.get('/payouts', adminGuard, async (req, res) => {
     try {
         const jobs = await Job.find({
-            paymentStatus: { $in: ['Pending Release', 'Pending Refund'] }
+            paymentStatus: { $in: ['Pending Payment', 'Pending Release', 'Pending Refund'] }
         }).populate('employer', 'name phone').populate('hiredWorkerId', 'name phone').sort({ createdAt: -1 });
         res.json(jobs);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
+// POST /api/admin/payouts/:jobId/confirm-payment — admin confirms they received payment from employer
+router.post('/payouts/:jobId/confirm-payment', adminGuard, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.jobId);
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+        if (job.paymentStatus !== 'Pending Payment') {
+            return res.status(400).json({ msg: 'Job is not awaiting payment confirmation.' });
+        }
+
+        job.paymentStatus = 'In-Escrow';
+        await job.save();
+
+        createNotification(
+            job.employer,
+            'escrow_funded',
+            'Payment Confirmed — In Escrow 🔒',
+            `Your payment of KES ${Number(job.pay).toLocaleString()} for "${job.title}" has been received and secured in escrow.`,
+            'payments'
+        );
+
+        if (job.hiredWorkerId) {
+            createNotification(
+                job.hiredWorkerId,
+                'escrow_funded',
+                'Payment Secured in Escrow 🔒',
+                `KES ${Number(job.pay).toLocaleString()} has been locked in escrow for "${job.title}". Complete the job to receive your payment.`,
+                'payments'
+            );
+        }
+
+        AuditLog.create({ userId: req.user.id, userName: req.user.name,
+            action: 'payment_confirmed', entity: 'job', entityId: job._id.toString(),
+            details: `Confirmed KES ${job.pay} for "${job.title}"` }).catch(() => {});
+
+        res.json({ msg: 'Payment confirmed. Job is now In-Escrow.' });
     } catch (err) {
         res.status(500).json({ msg: 'Server error.' });
     }

@@ -3027,16 +3027,36 @@
         }, 'primary', 'Mark Done');
     }
 
-    async function initiateEscrow(jobId) {
-        let phone = localStorage.getItem('userPhone') || prompt('Enter M-Pesa number (2547XXXXXXXX):');
-        if (!phone) return;
-        phone = phone.replace(/^0/, '254').replace(/\s+/g, '');
-        try {
-            const res  = await apiFetch(`/api/escrow/pay/${jobId}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ employerPhone: phone }) });
-            const data = await res.json();
-            showToast(res.ok ? 'info' : 'error', res.ok ? 'M-Pesa STK Push Sent' : 'Payment Error', data.msg);
-            if (res.ok) loadJobs();
-        } catch { showToast('error', 'Payment Failed', 'Could not initiate M-Pesa payment.'); }
+    function initiateEscrow(jobId) {
+        const btn = document.querySelector(`.btn-escrow-pay[data-jobid="${jobId}"]`);
+        const amount = btn ? btn.getAttribute('data-pay') : '';
+        const amountFmt = amount ? `KES ${Number(amount).toLocaleString()}` : 'the job amount';
+
+        showConfirm(
+            'Pay into Escrow',
+            `Send ${amountFmt} via M-PESA to:<br><br>
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin:8px 0;text-align:left;">
+                <div style="font-size:0.85rem;color:#166534;margin-bottom:4px;">Paybill Number</div>
+                <div style="font-size:1.4rem;font-weight:700;color:#15803d;letter-spacing:2px;">522522</div>
+                <div style="font-size:0.85rem;color:#166534;margin-top:10px;margin-bottom:4px;">Account Number</div>
+                <div style="font-size:1.2rem;font-weight:700;color:#15803d;">1302991450</div>
+                <div style="font-size:0.8rem;color:#166534;margin-top:8px;">Amount: <strong>${amountFmt}</strong></div>
+            </div>
+            After sending the money, click <strong>"I've Paid"</strong>. Admin will verify and confirm receipt.`,
+            async () => {
+                try {
+                    const phone = localStorage.getItem('userPhone') || '';
+                    const res  = await apiFetch(`/api/escrow/claim/${jobId}`, {
+                        method: 'POST', headers: authHeaders(),
+                        body: JSON.stringify({ employerPhone: phone })
+                    });
+                    const data = await res.json();
+                    showToast(res.ok ? 'success' : 'error', res.ok ? 'Claim Submitted' : 'Error', data.msg);
+                    if (res.ok) loadJobs();
+                } catch { showToast('error', 'Error', 'Could not submit. Try again.'); }
+            },
+            'primary', "I've Paid"
+        );
     }
 
     async function releasePayment(jobId) {

@@ -1,33 +1,21 @@
 /**
- * ESCROW ROUTES — Kazi Mtaani (IntaSend)
+ * ESCROW ROUTES — Kazi Mtaani (Manual Escrow)
+ * Payments are made manually by employer to admin's M-PESA/Paybill.
+ * Admin confirms receipt, then releases funds to worker manually.
  */
 const express          = require('express');
 const router           = express.Router();
 const Job              = require('../models/job');
 const User             = require('../models/user');
-const { stkPush, mpesaPayout } = require('../services/intasend');
 const protect          = require('../middleware/auth');
 const intasendGuard    = require('../middleware/intasend');
 const { createNotification } = require('./notifications');
 
-// ─── Phone format validation helper ──────────────────────────────────────────
-function isValidPhone(phone) {
-    return /^2547\d{8}$|^2541\d{8}$/.test(phone);
-}
-
-// ROUTE 1: Trigger STK Push (employer only, must own the job)
-router.post('/pay/:jobId', protect, async (req, res) => {
+// ROUTE 1: Employer confirms they have sent payment manually
+router.post('/claim/:jobId', protect, async (req, res) => {
     try {
         if (req.user.role !== 'employer') {
-            return res.status(403).json({ msg: 'Only employers can pay.' });
-        }
-
-        const { employerPhone } = req.body;
-        if (!employerPhone) {
-            return res.status(400).json({ msg: 'Employer phone number is required.' });
-        }
-        if (!isValidPhone(employerPhone)) {
-            return res.status(400).json({ msg: 'Phone must be in format 254XXXXXXXXX (e.g. 254712345678).' });
+            return res.status(403).json({ msg: 'Only employers can do this.' });
         }
 
         const job = await Job.findById(req.params.jobId);
@@ -38,23 +26,29 @@ router.post('/pay/:jobId', protect, async (req, res) => {
         }
 
         if (job.paymentStatus !== 'Pending') {
-            return res.status(400).json({ msg: `Job is already: ${job.paymentStatus}` });
+            return res.status(400).json({ msg: `Payment already submitted.` });
         }
 
-        job.employerPhone = employerPhone;
+        job.paymentStatus = 'Pending Payment';
+        job.employerPhone = req.body.employerPhone || '';
         await job.save();
 
-        const result = await stkPush(employerPhone, job.pay, job._id);
+        // Notify admin to confirm receipt
+        const adminUsers = await User.find({ role: 'admin' }).select('_id');
+        adminUsers.forEach(admin => {
+            createNotification(
+                admin._id,
+                'general',
+                'Payment Claim Received 💰',
+                `Employer claims to have sent KES ${Number(job.pay).toLocaleString()} for "${job.title}". Check your M-PESA and confirm receipt in the Payouts panel.`,
+                'payments'
+            );
+        });
 
-        // Store IntaSend invoice_id for matching the callback
-        job.checkoutRequestId = result.invoice?.invoice_id || result.invoice_id || '';
-        await job.save();
-
-        res.json({ msg: 'M-Pesa prompt sent! Check your phone.' });
+        res.json({ msg: 'Payment claim submitted! Admin will confirm receipt shortly.' });
     } catch (err) {
-        console.error('STK Push Error:', err.response?.data || err.message);
-        const msg = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to initiate payment.';
-        res.status(500).json({ msg });
+        console.error('Claim Error:', err.message);
+        res.status(500).json({ msg: 'Server error.' });
     }
 });
 

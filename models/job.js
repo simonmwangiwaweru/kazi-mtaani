@@ -9,7 +9,7 @@ const JobSchema = new mongoose.Schema({
 
     paymentStatus: {
         type: String,
-        enum: ['Pending', 'In-Escrow', 'Releasing', 'Refunding', 'Released', 'Refunded', 'Pending Release', 'Pending Refund'],
+        enum: ['Pending', 'Pending Payment', 'In-Escrow', 'Releasing', 'Refunding', 'Released', 'Refunded', 'Pending Release', 'Pending Refund'],
         default: 'Pending'
     },
 
