@@ -22,10 +22,6 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     process.exit(1);
 }
 
-// Warn if Google OAuth credentials are missing
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    console.warn('⚠️  Google OAuth credentials not set — Google Sign-In will be unavailable.');
-}
 
 const app = express();
 app.set('trust proxy', 1); // Trust Render's reverse proxy for real client IPs
@@ -48,20 +44,17 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc:  ["'self'"],
-            scriptSrc:   ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com", "https://cdnjs.cloudflare.com"],
+            scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
             'script-src-attr': ["'unsafe-inline'"],
             styleSrc:    ["'self'", "https:", "'unsafe-inline'"],
             imgSrc:      ["'self'", "data:", "https:"],
-            // Google Identity Services makes XHR calls back to accounts.google.com
-            connectSrc:  ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
+            connectSrc:  ["'self'"],
             fontSrc:     ["'self'", "https:", "data:"],
             objectSrc:   ["'none'"],
-            // Google renders its sign-in button inside an iframe on accounts.google.com
-            frameSrc:    ["https://accounts.google.com"],
+            frameSrc:    ["'none'"],
             frameAncestors: ["'none'"],
             baseUri:     ["'self'"],
-            // Allow Google's redirect-mode to POST the credential back to our server
-            formAction:  ["'self'", "https://accounts.google.com"],
+            formAction:  ["'self'"],
         }
     }
 }));

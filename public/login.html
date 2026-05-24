@@ -45,22 +45,6 @@
         .form-footer-text a:hover { text-decoration:underline; }
         #statusMsg { display:none; margin-top:14px; }
 
-        /* ── Google Sign-In ── */
-        .or-divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
-        .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--border); }
-        .or-divider span { font-size:0.82rem; color:var(--text-light); font-weight:500; white-space:nowrap; }
-        .btn-google {
-            width:100%; display:flex; align-items:center; justify-content:center; gap:12px;
-            padding:13px 20px; border:1.5px solid var(--border); border-radius:var(--radius-md);
-            background:var(--white); color:var(--text-primary); font-size:0.95rem; font-weight:600;
-            cursor:pointer; transition:var(--transition); font-family:'Inter',sans-serif;
-        }
-        .btn-google:hover { background:var(--off-white); border-color:var(--green-mid); box-shadow:var(--shadow-sm); }
-        .btn-google img { width:20px; height:20px; }
-        .btn-google:disabled { opacity:0.6; cursor:not-allowed; }
-
-        /* Hidden Google one-tap container */
-        #g_id_onload { display:none; }
 
         #regSuccessBanner {
             display:none;
@@ -155,20 +139,6 @@
 
             <div id="statusMsg"></div>
 
-            <!-- OR divider -->
-            <div class="or-divider"><span>or continue with</span></div>
-
-            <!-- Google Sign-In Button — OAuth2 redirect flow -->
-            <div id="googleBtnContainer" style="display:none;"></div>
-            <a id="googleFallbackBtn" href="/api/auth/google-redirect-init"
-               style="display:flex; align-items:center; justify-content:center; gap:12px; width:100%;
-                      padding:13px 20px; border:1.5px solid #dadce0; border-radius:50px; margin-top:8px;
-                      background:#fff; color:#3c4043; font-size:0.95rem; font-weight:600;
-                      text-decoration:none; transition:box-shadow 0.2s, background 0.2s; font-family:'Inter',sans-serif;">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20" alt="Google">
-                Continue with Google
-            </a>
-
             <p class="form-footer-text">
                 Don't have an account yet? <a href="register.html">Create one free</a>
             </p>
@@ -190,10 +160,9 @@
                 setTimeout(() => banner.style.display = 'none', 500);
             }, 6000);
         }
-        // Show error if Google auth failed
         const err = params.get('error');
-        if (err === 'google_failed' || err === 'server_error') {
-            showStatus('error', '❌ Google sign-in failed. Please try again or use your phone and password.');
+        if (err === 'server_error') {
+            showStatus('error', '❌ Something went wrong. Please try again.');
             history.replaceState(null, '', '/login.html');
         }
     });
@@ -256,11 +225,6 @@
             }
         });
     }
-
-    // ── Google Sign-In — uses standard OAuth2 redirect via /api/auth/google-redirect-init ──
-    // The fallback button is always shown; it links directly to the OAuth2 init route.
-
-
 
     // ── Session helper ──
     // Token is set as an httpOnly cookie by the server — only non-sensitive
