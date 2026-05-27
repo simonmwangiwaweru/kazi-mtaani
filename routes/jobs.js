@@ -105,15 +105,32 @@ router.post('/', protect, async (req, res) => {
         const savedJob = await newJob.save();
         audit(req.user.id, req.user.name, 'job_posted', 'job', savedJob._id.toString(), savedJob.title, req);
 
-        // ── Skill-matched notifications ──────────────────────────────────────────
-        // Notify up to 30 workers whose skills overlap with the job's required skills
-        // or whose specialization matches the job category.
-        if (safeSkills.length > 0 || safeCategory !== 'general') {
+        // ── Skill + locality matched notifications + SMS ─────────────────────────
+        // Find workers whose skills overlap AND whose location matches the job area.
+        // Falls back to skill-only match if no location overlap found.
+        if (safeSkills.length > 0 || safeCategory) {
+            const locationWords = savedJob.location.split(/[\s,]+/).filter(w => w.length > 2);
+            const locationRegexes = locationWords.map(w => new RegExp(w, 'i'));
+
             const skillQuery = safeSkills.length > 0
                 ? { role: 'worker', skills: { $in: safeSkills.map(s => new RegExp(s, 'i')) } }
                 : { role: 'worker', specialization: new RegExp(safeCategory, 'i') };
 
-            const matchingWorkers = await User.find(skillQuery).select('_id').limit(30).lean();
+            // Prefer workers in the same area; fall back to any skill match (max 20 total)
+            let matchingWorkers = await User.find({
+                ...skillQuery,
+                $or: [
+                    { 'location.county':    { $in: locationRegexes } },
+                    { 'location.subCounty': { $in: locationRegexes } },
+                ]
+            }).select('_id phone').limit(20).lean();
+
+            if (matchingWorkers.length === 0) {
+                matchingWorkers = await User.find(skillQuery).select('_id phone').limit(20).lean();
+            }
+
+            const smsText = `New job in ${savedJob.location}: "${savedJob.title}" — KES ${Number(savedJob.pay).toLocaleString()}. Apply at kazimtaani.co.ke`;
+
             matchingWorkers.forEach(w => {
                 createNotification(
                     w._id,
@@ -122,6 +139,9 @@ router.post('/', protect, async (req, res) => {
                     `${req.user.name} posted a ${safeCategory} job in ${savedJob.location} — KES ${Number(savedJob.pay).toLocaleString()}. Apply now!`,
                     'jobs'
                 );
+                if (w.phone) {
+                    sendSMS(w.phone, smsText).catch(() => {});
+                }
             });
         }
 

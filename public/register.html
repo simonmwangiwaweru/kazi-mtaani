@@ -200,13 +200,25 @@
                     </ul>
                 </div>
 
-                <button type="submit" id="submitBtn" class="btn-primary w-full" style="padding:14px; font-size:1rem; margin-top:4px;">
+                <!-- Consent checkbox -->
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;margin-bottom:4px;">
+                    <input type="checkbox" id="consentCheck" required
+                        style="width:17px;height:17px;margin-top:2px;accent-color:var(--green);flex-shrink:0;cursor:pointer;">
+                    <label for="consentCheck" style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;cursor:pointer;">
+                        I have read and agree to the
+                        <a href="privacy.html" target="_blank" style="color:var(--green);font-weight:600;text-decoration:underline;">Privacy Policy</a>.
+                        I consent to Kazi Mtaani collecting and processing my personal data to provide its services,
+                        including SMS notifications.
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary w-full" style="padding:14px; font-size:1rem; margin-top:12px;">
                     Create Free Account
                 </button>
             </form>
 
             <p class="form-footer-text" style="margin-top:14px; font-size:0.8rem; color:var(--text-light);">
-                By creating an account you agree to our <a href="#" style="color:var(--text-secondary);">Terms of Service</a>.
+                By creating an account you also agree to our <a href="privacy.html" target="_blank" style="color:var(--text-secondary);">Terms of Service</a>.
             </p>
             <p class="form-footer-text">
                 Already have an account? <a href="login.html">Sign in</a>
@@ -291,6 +303,13 @@
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
+
+        // ── Consent check ──
+        if (!document.getElementById('consentCheck').checked) {
+            showStatus('error', '⚠️ Please read and accept the Privacy Policy before continuing.');
+            document.getElementById('consentCheck').focus();
+            return;
+        }
 
         // ── Client-side password requirements check ──
         const pwVal = document.getElementById('regPass').value;
