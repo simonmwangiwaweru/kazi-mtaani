@@ -9,7 +9,7 @@ const NotificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['applied', 'hired', 'escrow_funded', 'payment_released', 'refunded', 'general'],
+        enum: ['applied', 'hired', 'escrow_funded', 'payment_released', 'refunded', 'general', 'new_job', 'completed'],
         default: 'general'
     },
     title:   { type: String, required: true },
