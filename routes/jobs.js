@@ -18,6 +18,18 @@ function sanitizeText(val, maxLen) {
     return String(val).replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLen || 2000);
 }
 
+// Strip common job-title/activity suffixes to get a matchable stem.
+// e.g. "painter"→"paint", "painting"→"paint", "plumber"→"plumb", "plumbing"→"plumb"
+function skillStem(skill) {
+    const s = skill.trim().toLowerCase();
+    for (const suffix of ['tion', 'ing', 'er', 'or', 'ist', 'man', 'ry']) {
+        if (s.endsWith(suffix) && s.length - suffix.length >= 4) {
+            return s.slice(0, -suffix.length);
+        }
+    }
+    return s;
+}
+
 // 1. GET jobs (public) — supports ?search, ?category, ?status, ?page, ?limit
 router.get('/', async (req, res) => {
     try {
@@ -112,8 +124,12 @@ router.post('/', protect, async (req, res) => {
             const locationWords = savedJob.location.split(/[\s,]+/).filter(w => w.length > 2);
             const locationRegexes = locationWords.map(w => new RegExp(w, 'i'));
 
-            const skillQuery = safeSkills.length > 0
-                ? { role: 'worker', skills: { $in: safeSkills.map(s => new RegExp(s, 'i')) } }
+            const skillRegexes = safeSkills.map(s => {
+                const stem = skillStem(s);
+                return new RegExp(stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            });
+            const skillQuery = skillRegexes.length > 0
+                ? { role: 'worker', skills: { $in: skillRegexes } }
                 : { role: 'worker', specialization: new RegExp(safeCategory, 'i') };
 
             // Prefer workers in the same area; fall back to any skill match (max 20 total)
