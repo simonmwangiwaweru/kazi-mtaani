@@ -6,6 +6,7 @@ const express = require('express');
 const router  = express.Router();
 const Message = require('../models/Message');
 const Job     = require('../models/job');
+const User    = require('../models/user');
 const protect = require('../middleware/auth');
 
 function sanitize(val, max) {
@@ -19,7 +20,7 @@ async function getJobAndVerify(jobId, userId) {
     if (!job) return null;
     const isEmployer = job.employer && job.employer.toString() === userId;
     const isWorker   = job.hiredWorkerId?.toString() === userId ||
-                       (job.applicants && job.applicants.length > 0); // any applicant
+                       (job.applicants && job.applicants.some(id => id.toString() === userId));
     if (!isEmployer && !isWorker) return null;
     return job;
 }
@@ -143,6 +144,37 @@ router.get('/', protect, async (req, res) => {
         res.json(active);
     } catch (err) {
         console.error('Conversations error:', err.message);
+        res.status(500).json({ msg: 'Server error.' });
+    }
+});
+
+// GET /api/messages/:jobId/contact — returns the other party's name + phone for WhatsApp
+// Only accessible to the employer and the hired worker on this job
+router.get('/:jobId/contact', protect, async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.jobId)
+            .populate('employer', 'name phone');
+        if (!job) return res.status(404).json({ msg: 'Job not found.' });
+
+        const isEmployer    = job.employer?._id?.toString() === req.user.id;
+        const isHiredWorker = job.hiredWorkerId?.toString() === req.user.id;
+
+        if (!isEmployer && !isHiredWorker) {
+            return res.status(403).json({ msg: 'Not a participant of this job.' });
+        }
+        if (!job.hiredWorkerId) {
+            return res.status(400).json({ msg: 'No hired worker yet.' });
+        }
+
+        if (isEmployer) {
+            const worker = await User.findById(job.hiredWorkerId).select('name phone');
+            if (!worker) return res.status(404).json({ msg: 'Worker not found.' });
+            return res.json({ name: worker.name, phone: worker.phone });
+        } else {
+            return res.json({ name: job.employer.name, phone: job.employer.phone });
+        }
+    } catch (err) {
+        console.error('Contact info error:', err.message);
         res.status(500).json({ msg: 'Server error.' });
     }
 });
