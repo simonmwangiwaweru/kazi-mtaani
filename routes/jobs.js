@@ -131,6 +131,7 @@ router.post('/', protect, async (req, res) => {
 
             const smsText = `New job in ${savedJob.location}: "${savedJob.title}" — KES ${Number(savedJob.pay).toLocaleString()}. Apply at kazimtaani.co.ke`;
 
+            console.log(`Job alert: found ${matchingWorkers.length} matching worker(s) for "${savedJob.title}"`);
             matchingWorkers.forEach(w => {
                 createNotification(
                     w._id,
@@ -140,7 +141,10 @@ router.post('/', protect, async (req, res) => {
                     'jobs'
                 );
                 if (w.phone) {
-                    sendSMS(w.phone, smsText).catch(() => {});
+                    console.log(`Sending job alert SMS to ${w.phone}`);
+                    sendSMS(w.phone, smsText)
+                        .then(() => console.log(`Job alert SMS sent to ${w.phone}`))
+                        .catch(err => console.error(`Job alert SMS failed for ${w.phone}:`, err.message));
                 }
             });
         }
