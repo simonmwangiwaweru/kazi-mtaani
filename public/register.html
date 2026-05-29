@@ -26,82 +26,79 @@
         .benefit-list li::before { content:'✓'; background:rgba(255,255,255,0.2); border-radius:50%;
             width:24px; height:24px; display:flex; align-items:center; justify-content:center;
             font-weight:700; flex-shrink:0; font-size:0.8rem; margin-top:1px; }
-        .auth-right { flex:1; display:flex; align-items:center; justify-content:center; padding:40px; background:var(--off-white); overflow-y:auto; }
+        .auth-right { flex:1; display:flex; align-items:center; justify-content:center;
+            padding:40px; background:var(--off-white); overflow-y:auto; }
         .auth-form-box { width:100%; max-width:460px; animation:slideUp 0.5s ease-out; padding:8px 0; }
         @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes shake {
-            0%,100%{transform:translateX(0)}
-            20%{transform:translateX(-6px)}
-            40%{transform:translateX(6px)}
-            60%{transform:translateX(-4px)}
-            80%{transform:translateX(4px)}
+            0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)}
+            40%{transform:translateX(6px)}  60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
         }
         .form-logo { font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800;
             color:var(--green); text-decoration:none; display:block; margin-bottom:28px; }
         .form-logo span { color:var(--text-primary); }
         .form-header h1 { font-size:1.8rem; color:var(--text-primary); margin-bottom:6px; }
-        .form-header p { color:var(--text-secondary); font-size:0.92rem; margin-bottom:28px; }
+        .form-header p  { color:var(--text-secondary); font-size:0.92rem; margin-bottom:28px; }
         .form-group { margin-bottom:18px; }
-        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .input-wrapper { position:relative; }
         .input-wrapper .input-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%);
             font-size:1rem; color:var(--text-light); pointer-events:none; }
-        .input-wrapper input, .input-wrapper select { padding-left:42px; }
+        .input-wrapper input { padding-left:42px; }
         .input-wrapper .toggle-pw { position:absolute; right:14px; top:50%; transform:translateY(-50%);
             cursor:pointer; background:none; border:none; padding:4px; color:var(--text-light); font-size:1rem; }
         .role-selector { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
         .role-card { border:2px solid var(--border); border-radius:var(--radius-md); padding:18px 14px;
             text-align:center; cursor:pointer; transition:var(--transition); background:var(--white); }
         .role-card:hover { border-color:var(--green-mid); background:var(--green-light); }
-        .role-card.selected { border-color:var(--green); background:var(--green-light); }
-        /* Add CSS radio selector */
-        input[type="radio"].hidden-role:checked + .role-card {
-            border-color:var(--green); background:var(--green-light);
-        }
+        input[type="radio"].hidden-role:checked + .role-card { border-color:var(--green); background:var(--green-light); }
         .role-card .role-icon { font-size:2rem; margin-bottom:8px; }
         .role-card strong { display:block; font-size:0.95rem; color:var(--text-primary); margin-bottom:4px; }
-        .role-card small { font-size:0.8rem; color:var(--text-secondary); }
+        .role-card small  { font-size:0.8rem; color:var(--text-secondary); }
         .form-footer-text { text-align:center; color:var(--text-secondary); font-size:0.9rem; margin-top:22px; }
         .form-footer-text a { color:var(--green); font-weight:600; text-decoration:none; }
         .form-footer-text a:hover { text-decoration:underline; }
-        @media (max-width:768px) {
-            .auth-left { display:none; }
-            .auth-right { background:var(--white); padding:28px 20px; }
-            .form-row { grid-template-columns:1fr; }
-        }
+
+        /* ── Step indicators ── */
+        .steps { display:flex; align-items:center; gap:0; margin-bottom:28px; }
+        .step-item { display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; color:var(--text-light); }
+        .step-item .step-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border);
+            display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700;
+            background:var(--white); transition:all 0.3s; flex-shrink:0; }
+        .step-item.active .step-dot  { border-color:var(--green); background:var(--green); color:#fff; }
+        .step-item.done .step-dot    { border-color:var(--green); background:var(--green); color:#fff; }
+        .step-item.active { color:var(--text-primary); }
+        .step-item.done   { color:var(--green-dark); }
+        .step-line { flex:1; height:2px; background:var(--border); margin:0 8px; transition:background 0.3s; }
+        .step-line.done { background:var(--green); }
+
+        /* ── Phone verified badge ── */
+        .phone-verified { display:flex; align-items:center; gap:8px; background:var(--green-light);
+            border:1px solid var(--green-mid); border-radius:var(--radius-md); padding:10px 14px;
+            font-size:0.88rem; color:var(--green-dark); font-weight:600; margin-bottom:18px; }
+
+        /* ── OTP input ── */
+        .otp-input { letter-spacing:8px; font-size:1.4rem; font-weight:700; text-align:center;
+            padding-left:14px !important; font-family:'Outfit',sans-serif; }
+        .countdown { font-size:0.8rem; color:var(--text-light); text-align:center; margin-top:6px; }
+        .countdown span { color:var(--green); font-weight:600; }
+
+        /* ── Password Strength ── */
+        .pw-strength-bar { display:flex; gap:4px; margin-top:8px; }
+        .pw-strength-bar span { flex:1; height:4px; border-radius:4px; background:var(--border); transition:background 0.35s; }
+        .pw-strength-label { font-size:0.75rem; font-weight:600; margin-top:4px; transition:color 0.3s; color:var(--text-light); }
+        .pw-req-list { list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:5px; }
+        .pw-req-list li { display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-secondary); transition:color 0.25s; }
+        .pw-req-list li .req-icon { width:16px; height:16px; border-radius:50%; display:flex; align-items:center;
+            justify-content:center; font-size:0.65rem; font-weight:700; flex-shrink:0;
+            background:#e5e7eb; color:#9ca3af; transition:background 0.25s, color 0.25s; }
+        .pw-req-list li.met .req-icon { background:#dcfce7; color:#16a34a; }
+        .pw-req-list li.met { color:var(--text-primary); }
 
         #statusMsg { display:none; margin-top:14px; }
 
-        /* ── Password Strength Meter ── */
-        .pw-strength-bar {
-            display:flex; gap:4px; margin-top:8px;
-        }
-        .pw-strength-bar span {
-            flex:1; height:4px; border-radius:4px;
-            background:var(--border); transition:background 0.35s ease;
-        }
-        .pw-strength-label {
-            font-size:0.75rem; font-weight:600; margin-top:4px; transition:color 0.3s;
-            color: var(--text-light);
-        }
-        .pw-req-list {
-            list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:5px;
-        }
-        .pw-req-list li {
-            display:flex; align-items:center; gap:8px;
-            font-size:0.8rem; color:var(--text-secondary); transition:color 0.25s;
-        }
-        .pw-req-list li .req-icon {
-            width:16px; height:16px; border-radius:50%;
-            display:flex; align-items:center; justify-content:center;
-            font-size:0.65rem; font-weight:700; flex-shrink:0;
-            background: #e5e7eb; color:#9ca3af; transition:background 0.25s, color 0.25s;
-        }
-        .pw-req-list li.met .req-icon {
-            background:#dcfce7; color:#16a34a;
-        }
-        .pw-req-list li.met {
-            color:var(--text-primary);
+        @media (max-width:768px) {
+            .auth-left { display:none; }
+            .auth-right { background:var(--white); padding:28px 20px; }
         }
     </style>
 </head>
@@ -111,7 +108,7 @@
     <!-- LEFT PANEL -->
     <div class="auth-left">
         <div class="auth-left-content">
-            <a href="index.html" style="color:white; font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800; text-decoration:none; display:block; margin-bottom:28px;">
+            <a href="index.html" style="color:white;font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;text-decoration:none;display:block;margin-bottom:28px;">
                 Kazi<span style="color:rgba(255,255,255,0.7);">Mtaani</span>
             </a>
             <h2>Join Kenya's #1 Local Job Network</h2>
@@ -130,129 +127,402 @@
     <div class="auth-right">
         <div class="auth-form-box">
             <a href="index.html" class="form-logo">Kazi<span>Mtaani</span></a>
-            <div class="form-header">
-                <h1>Create Account</h1>
-                <p>Join thousands of Kenyans earning and hiring every day.</p>
+
+            <!-- Step indicators -->
+            <div class="steps">
+                <div class="step-item active" id="si1">
+                    <div class="step-dot" id="sd1">1</div>
+                    <span>Phone</span>
+                </div>
+                <div class="step-line" id="sl1"></div>
+                <div class="step-item" id="si2">
+                    <div class="step-dot" id="sd2">2</div>
+                    <span>Verify</span>
+                </div>
+                <div class="step-line" id="sl2"></div>
+                <div class="step-item" id="si3">
+                    <div class="step-dot" id="sd3">3</div>
+                    <span>Account</span>
+                </div>
             </div>
 
-            <!-- Role Selector -->
-            <fieldset style="border:none; padding:0; margin:0 0 20px 0;">
-                <legend style="margin-bottom:12px; font-weight:600;">I want to join as:</legend>
-                <div class="role-selector">
-                    <div style="flex:1;">
-                        <input type="radio" name="regRole" value="worker" id="roleWorker" checked class="hidden-role" style="display:none;">
-                        <label class="role-card" for="roleWorker" style="display:block; height:100%;">
-                            <div class="role-icon">👷</div>
-                            <strong>Worker</strong>
-                            <small>Find & take jobs</small>
-                        </label>
-                    </div>
-                    <div style="flex:1;">
-                        <input type="radio" name="regRole" value="employer" id="roleEmployer" class="hidden-role" style="display:none;">
-                        <label class="role-card" for="roleEmployer" style="display:block; height:100%;">
-                            <div class="role-icon">🏢</div>
-                            <strong>Employer</strong>
-                            <small>Post & hire talent</small>
-                        </label>
-                    </div>
+            <!-- ── STEP 1: Phone entry ── -->
+            <div id="step1">
+                <div class="form-header">
+                    <h1>Enter Your Number</h1>
+                    <p>We'll send a verification code to confirm this number is yours.</p>
                 </div>
-            </fieldset>
-
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="regName">Full Name</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
-                        <input type="text" id="regName" class="glass-input" placeholder="e.g. John Kamau" required>
-                    </div>
-                </div>
-
                 <div class="form-group">
                     <label for="regPhone">Phone Number</label>
                     <div class="input-wrapper">
                         <span class="input-icon">📞</span>
-                        <input type="text" id="regPhone" class="glass-input" placeholder="e.g. 0712 345 678" required>
+                        <input type="text" id="regPhone" class="glass-input"
+                            placeholder="e.g. 0712 345 678" inputmode="numeric">
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="regPass">Create Password</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" id="regPass" class="glass-input" placeholder="At least 8 chars, letters, numbers & symbols" required autocomplete="new-password">
-                        <button class="toggle-pw" id="togglePassword" type="button">👁️</button>
-                    </div>
-                    <!-- Live strength bar -->
-                    <div class="pw-strength-bar" id="pwStrengthBar" aria-hidden="true">
-                        <span id="pwSeg1"></span>
-                        <span id="pwSeg2"></span>
-                        <span id="pwSeg3"></span>
-                        <span id="pwSeg4"></span>
-                    </div>
-                    <div class="pw-strength-label" id="pwStrengthLabel"></div>
-                    <!-- Requirements checklist -->
-                    <ul class="pw-req-list" id="pwReqList" aria-live="polite">
-                        <li id="req-len"><span class="req-icon">✓</span> At least 8 characters</li>
-                        <li id="req-upper"><span class="req-icon">✓</span> One uppercase letter (A–Z)</li>
-                        <li id="req-lower"><span class="req-icon">✓</span> One lowercase letter (a–z)</li>
-                        <li id="req-num"><span class="req-icon">✓</span> One number (0–9)</li>
-                        <li id="req-special"><span class="req-icon">✓</span> One special character (@$!%*?&amp;#^)</li>
-                    </ul>
-                </div>
-
-                <!-- Consent checkbox -->
-                <div style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;margin-bottom:4px;">
-                    <input type="checkbox" id="consentCheck" required
-                        style="width:17px;height:17px;margin-top:2px;accent-color:var(--green);flex-shrink:0;cursor:pointer;">
-                    <label for="consentCheck" style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;cursor:pointer;">
-                        I have read and agree to the
-                        <a href="privacy.html" target="_blank" style="color:var(--green);font-weight:600;text-decoration:underline;">Privacy Policy</a>.
-                        I consent to Kazi Mtaani collecting and processing my personal data to provide its services,
-                        including SMS notifications.
-                    </label>
-                </div>
-
-                <button type="submit" id="submitBtn" class="btn-primary w-full" style="padding:14px; font-size:1rem; margin-top:12px;">
-                    Create Free Account
+                <button class="btn-primary w-full" id="sendOtpBtn" onclick="sendOTP()" style="padding:14px;font-size:1rem;">
+                    Send Verification Code
                 </button>
-            </form>
+            </div>
 
-            <p class="form-footer-text" style="margin-top:14px; font-size:0.8rem; color:var(--text-light);">
-                By creating an account you also agree to our <a href="privacy.html" target="_blank" style="color:var(--text-secondary);">Terms of Service</a>.
-            </p>
-            <p class="form-footer-text">
-                Already have an account? <a href="login.html">Sign in</a>
-            </p>
+            <!-- ── STEP 2: OTP entry ── -->
+            <div id="step2" style="display:none;">
+                <div class="form-header">
+                    <h1>Enter the Code</h1>
+                    <p id="otpSentMsg">We sent a 6-digit code to your phone.</p>
+                </div>
+                <div class="form-group">
+                    <label for="otpInput">Verification Code</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔑</span>
+                        <input type="text" id="otpInput" class="glass-input otp-input"
+                            placeholder="------" maxlength="6" inputmode="numeric">
+                    </div>
+                    <div class="countdown">Code expires in <span id="countdown">10:00</span></div>
+                </div>
+                <button class="btn-primary w-full" id="verifyOtpBtn" onclick="verifyOTP()" style="padding:14px;font-size:1rem;">
+                    Verify Code
+                </button>
+                <p style="text-align:center;margin-top:14px;font-size:0.85rem;color:var(--text-secondary);">
+                    Didn't receive it?
+                    <button onclick="goBack()" style="background:none;border:none;color:var(--green);font-weight:600;cursor:pointer;font-size:0.85rem;padding:0;">
+                        Change number
+                    </button>
+                    &nbsp;or&nbsp;
+                    <button onclick="resendOTP()" id="resendBtn" style="background:none;border:none;color:var(--green);font-weight:600;cursor:pointer;font-size:0.85rem;padding:0;" disabled>
+                        Resend code
+                    </button>
+                </p>
+            </div>
+
+            <!-- ── STEP 3: Account details ── -->
+            <div id="step3" style="display:none;">
+                <div class="form-header">
+                    <h1>Create Account</h1>
+                    <p>Almost there! Fill in your details below.</p>
+                </div>
+
+                <!-- Phone verified badge -->
+                <div class="phone-verified">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <span id="verifiedPhoneDisplay">Phone verified</span>
+                </div>
+
+                <!-- Role selector -->
+                <fieldset style="border:none;padding:0;margin:0 0 20px 0;">
+                    <legend style="margin-bottom:12px;font-weight:600;">I want to join as:</legend>
+                    <div class="role-selector">
+                        <div style="flex:1;">
+                            <input type="radio" name="regRole" value="worker" id="roleWorker" checked class="hidden-role" style="display:none;">
+                            <label class="role-card" for="roleWorker" style="display:block;height:100%;">
+                                <div class="role-icon">👷</div>
+                                <strong>Worker</strong>
+                                <small>Find & take jobs</small>
+                            </label>
+                        </div>
+                        <div style="flex:1;">
+                            <input type="radio" name="regRole" value="employer" id="roleEmployer" class="hidden-role" style="display:none;">
+                            <label class="role-card" for="roleEmployer" style="display:block;height:100%;">
+                                <div class="role-icon">🏢</div>
+                                <strong>Employer</strong>
+                                <small>Post & hire talent</small>
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regName">Full Name</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="regName" class="glass-input" placeholder="e.g. John Kamau" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regPass">Create Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="regPass" class="glass-input"
+                                placeholder="At least 8 chars, letters, numbers & symbols"
+                                required autocomplete="new-password">
+                            <button class="toggle-pw" id="togglePassword" type="button">👁️</button>
+                        </div>
+                        <div class="pw-strength-bar" id="pwStrengthBar" aria-hidden="true">
+                            <span id="pwSeg1"></span><span id="pwSeg2"></span>
+                            <span id="pwSeg3"></span><span id="pwSeg4"></span>
+                        </div>
+                        <div class="pw-strength-label" id="pwStrengthLabel"></div>
+                        <ul class="pw-req-list" id="pwReqList" aria-live="polite">
+                            <li id="req-len"><span class="req-icon">✓</span> At least 8 characters</li>
+                            <li id="req-upper"><span class="req-icon">✓</span> One uppercase letter (A–Z)</li>
+                            <li id="req-lower"><span class="req-icon">✓</span> One lowercase letter (a–z)</li>
+                            <li id="req-num"><span class="req-icon">✓</span> One number (0–9)</li>
+                            <li id="req-special"><span class="req-icon">✓</span> One special character (@$!%*?&amp;#^)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Consent -->
+                    <div style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;margin-bottom:4px;">
+                        <input type="checkbox" id="consentCheck" required
+                            style="width:17px;height:17px;margin-top:2px;accent-color:var(--green);flex-shrink:0;cursor:pointer;">
+                        <label for="consentCheck" style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;cursor:pointer;">
+                            I have read and agree to the
+                            <a href="privacy.html" target="_blank"
+                               style="color:var(--green);font-weight:600;text-decoration:underline;">Privacy Policy</a>.
+                            I consent to Kazi Mtaani collecting and processing my personal data, including SMS notifications.
+                        </label>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn-primary w-full"
+                            style="padding:14px;font-size:1rem;margin-top:12px;">
+                        Create Free Account
+                    </button>
+                </form>
+            </div>
 
             <div id="statusMsg"></div>
+
+            <p class="form-footer-text" style="margin-top:20px;">
+                Already have an account? <a href="login.html">Sign in</a>
+            </p>
         </div>
     </div>
 </div>
 
 <script>
-    // Role selection handled purely by CSS sibling selector.
-    // Pre-select from URL param
+    // ── State ──
+    let _verifiedPhone = '';   // normalised phone after OTP verified
+    let _phoneToken    = '';   // short-lived token from server
+    let _countdown     = null; // setInterval handle
+
+    // Pre-select role from URL param
     const urlRole = new URLSearchParams(window.location.search).get('role');
     if (urlRole === 'employer') {
-        const empInput = document.getElementById('roleEmployer');
-        if (empInput) empInput.checked = true;
+        const el = document.getElementById('roleEmployer');
+        if (el) el.checked = true;
     }
 
-    // Password toggle - null safe
-    const toggleBtn = document.getElementById('togglePassword');
-    const pwInput = document.getElementById('regPass');
-    if (toggleBtn && pwInput) {
-        toggleBtn.addEventListener('click', () => {
-            const isText = pwInput.type === 'text';
-            pwInput.type = isText ? 'password' : 'text';
-            toggleBtn.textContent = isText ? '👁️' : '🕶️';
+    // ── Step helpers ──
+    function goToStep(n) {
+        document.getElementById('step1').style.display = n === 1 ? 'block' : 'none';
+        document.getElementById('step2').style.display = n === 2 ? 'block' : 'none';
+        document.getElementById('step3').style.display = n === 3 ? 'block' : 'none';
+        showStatus('', '');
+
+        // Update step indicators
+        [1,2,3].forEach(i => {
+            const si = document.getElementById('si'+i);
+            const sd = document.getElementById('sd'+i);
+            si.classList.remove('active','done');
+            if (i < n)      { si.classList.add('done');   sd.innerHTML = '✓'; }
+            else if (i===n) { si.classList.add('active'); sd.textContent = i; }
+            else            { sd.textContent = i; }
+        });
+        [1,2].forEach(i => {
+            const sl = document.getElementById('sl'+i);
+            sl.classList.toggle('done', i < n);
         });
     }
 
-    // ── Live Password Strength Meter ──
-    const regPassInput = document.getElementById('regPass');
-    const segments     = [document.getElementById('pwSeg1'), document.getElementById('pwSeg2'),
-                          document.getElementById('pwSeg3'), document.getElementById('pwSeg4')];
+    function goBack() {
+        clearInterval(_countdown);
+        goToStep(1);
+    }
+
+    // ── STEP 1: Send OTP ──
+    async function sendOTP() {
+        const rawPhone = document.getElementById('regPhone').value.trim();
+        if (!rawPhone) { showStatus('error', '⚠️ Please enter your phone number.'); return; }
+
+        const btn = document.getElementById('sendOtpBtn');
+        btn.disabled    = true;
+        btn.textContent = 'Sending…';
+
+        try {
+            const res  = await fetch('/api/auth/send-otp', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: rawPhone })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                // Normalise for display
+                let disp = rawPhone.startsWith('0') ? '+254' + rawPhone.slice(1) : '+' + rawPhone;
+                document.getElementById('otpSentMsg').textContent =
+                    `We sent a 6-digit code to ${disp}. Enter it below.`;
+                goToStep(2);
+                startCountdown(10 * 60);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Could not send OTP.'));
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Please try again.');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = 'Send Verification Code';
+        }
+    }
+
+    // ── STEP 2: Verify OTP ──
+    async function verifyOTP() {
+        const phone = document.getElementById('regPhone').value.trim();
+        const otp   = document.getElementById('otpInput').value.trim();
+        if (!otp || otp.length < 6) { showStatus('error', '⚠️ Enter the 6-digit code from your SMS.'); return; }
+
+        const btn = document.getElementById('verifyOtpBtn');
+        btn.disabled    = true;
+        btn.textContent = 'Verifying…';
+
+        try {
+            const res  = await fetch('/api/auth/verify-otp', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                clearInterval(_countdown);
+                _phoneToken    = data.phoneToken;
+                _verifiedPhone = phone;
+                let disp = phone.startsWith('0') ? '+254' + phone.slice(1) : '+' + phone;
+                document.getElementById('verifiedPhoneDisplay').textContent = `Phone verified: ${disp}`;
+                goToStep(3);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Invalid code.'));
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Please try again.');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = 'Verify Code';
+        }
+    }
+
+    // ── Resend OTP ──
+    async function resendOTP() {
+        document.getElementById('otpInput').value = '';
+        clearInterval(_countdown);
+        const rawPhone = document.getElementById('regPhone').value.trim();
+        const btn = document.getElementById('resendBtn');
+        btn.disabled    = true;
+        btn.textContent = 'Sending…';
+        try {
+            const res = await fetch('/api/auth/send-otp', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: rawPhone })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showStatus('success', '✅ New code sent!');
+                startCountdown(10 * 60);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Could not resend.'));
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed.');
+        } finally {
+            btn.textContent = 'Resend code';
+        }
+    }
+
+    // ── Countdown timer ──
+    function startCountdown(seconds) {
+        const el      = document.getElementById('countdown');
+        const resend  = document.getElementById('resendBtn');
+        resend.disabled = true;
+        let remaining = seconds;
+
+        clearInterval(_countdown);
+        _countdown = setInterval(() => {
+            remaining--;
+            const m = String(Math.floor(remaining / 60)).padStart(2,'0');
+            const s = String(remaining % 60).padStart(2,'0');
+            el.textContent = `${m}:${s}`;
+            if (remaining <= 0) {
+                clearInterval(_countdown);
+                el.textContent    = 'expired';
+                resend.disabled   = false;
+            }
+        }, 1000);
+    }
+
+    // ── STEP 3: Register ──
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+
+        if (!document.getElementById('consentCheck').checked) {
+            showStatus('error', '⚠️ Please read and accept the Privacy Policy before continuing.');
+            return;
+        }
+
+        const pwVal = document.getElementById('regPass').value;
+        const pwOk  = {
+            len:     pwVal.length >= 8,
+            upper:   /[A-Z]/.test(pwVal),
+            lower:   /[a-z]/.test(pwVal),
+            num:     /[0-9]/.test(pwVal),
+            special: /[@$!%*?&#^_\-]/.test(pwVal)
+        };
+        if (!Object.values(pwOk).every(Boolean)) {
+            showStatus('error', '🔐 Password doesn\'t meet all requirements.');
+            const list = document.getElementById('pwReqList');
+            list.style.animation = 'none';
+            setTimeout(() => { list.style.animation = 'shake 0.4s ease'; }, 10);
+            return;
+        }
+
+        if (!_phoneToken) {
+            showStatus('error', '⚠️ Phone verification missing. Please go back and verify your number.');
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Creating account…';
+
+        try {
+            const res  = await fetch('/api/auth/register', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name:       document.getElementById('regName').value,
+                    phone:      _verifiedPhone,
+                    password:   pwVal,
+                    role:       document.querySelector('input[name="regRole"]:checked').value,
+                    phoneToken: _phoneToken
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showStatus('success', '🎉 Account created! Taking you to sign in…');
+                btn.textContent = '✅ Account Created!';
+                setTimeout(() => window.location.href = 'login.html?registered=true', 2000);
+            } else {
+                showStatus('error', '❌ ' + (data.msg || 'Registration failed. Try again.'));
+                btn.disabled    = false;
+                btn.textContent = 'Create Free Account';
+            }
+        } catch {
+            showStatus('error', '⚠️ Connection failed. Please try again.');
+            btn.disabled    = false;
+            btn.textContent = 'Create Free Account';
+        }
+    });
+
+    // ── Password toggle ──
+    document.getElementById('togglePassword').addEventListener('click', () => {
+        const pw = document.getElementById('regPass');
+        const isText = pw.type === 'text';
+        pw.type = isText ? 'password' : 'text';
+        document.getElementById('togglePassword').textContent = isText ? '👁️' : '🕶️';
+    });
+
+    // ── Password strength ──
+    const segments      = ['pwSeg1','pwSeg2','pwSeg3','pwSeg4'].map(id => document.getElementById(id));
     const strengthLabel = document.getElementById('pwStrengthLabel');
     const reqIds = {
         len:     document.getElementById('req-len'),
@@ -261,123 +531,34 @@
         num:     document.getElementById('req-num'),
         special: document.getElementById('req-special')
     };
-
     const STRENGTH_LEVELS = [
-        { label: '',          color: 'transparent' },
-        { label: '⚠️ Too weak',   color: '#ef4444' },
-        { label: '🔶 Weak',        color: '#f97316' },
-        { label: '🔷 Fair',        color: '#eab308' },
-        { label: '✅ Strong',      color: '#22c55e' }
+        { label:'', color:'transparent' },
+        { label:'⚠️ Too weak', color:'#ef4444' },
+        { label:'🔶 Weak',     color:'#f97316' },
+        { label:'🔷 Fair',     color:'#eab308' },
+        { label:'✅ Strong',   color:'#22c55e' }
     ];
-
-    function checkReq(id, met) {
-        reqIds[id].classList.toggle('met', met);
-    }
-
-    regPassInput.addEventListener('input', function () {
+    document.getElementById('regPass').addEventListener('input', function() {
         const v = this.value;
         const checks = {
-            len:     v.length >= 8,
-            upper:   /[A-Z]/.test(v),
-            lower:   /[a-z]/.test(v),
-            num:     /[0-9]/.test(v),
-            special: /[@$!%*?&#^_\-]/.test(v)
+            len:v.length>=8, upper:/[A-Z]/.test(v), lower:/[a-z]/.test(v),
+            num:/[0-9]/.test(v), special:/[@$!%*?&#^_\-]/.test(v)
         };
-
-        Object.entries(checks).forEach(([k, met]) => checkReq(k, met));
-
-        const score = Object.values(checks).filter(Boolean).length; // 0–5
-        // Map 5 checks → 4 bar segments
-        const filled = score === 0 ? 0 : Math.ceil(score / 5 * 4);
-        const level  = score === 0 ? 0 : score <= 2 ? 1 : score === 3 ? 2 : score === 4 ? 3 : 4;
-        const { label, color } = STRENGTH_LEVELS[level];
-
-        segments.forEach((seg, i) => {
-            seg.style.background = i < filled ? color : 'var(--border)';
-        });
+        Object.entries(checks).forEach(([k,met]) => reqIds[k].classList.toggle('met', met));
+        const score  = Object.values(checks).filter(Boolean).length;
+        const filled = score === 0 ? 0 : Math.ceil(score/5*4);
+        const level  = score === 0 ? 0 : score<=2 ? 1 : score===3 ? 2 : score===4 ? 3 : 4;
+        const {label, color} = STRENGTH_LEVELS[level];
+        segments.forEach((seg,i) => { seg.style.background = i < filled ? color : 'var(--border)'; });
         strengthLabel.textContent = v.length ? label : '';
         strengthLabel.style.color = color;
     });
 
-    // ── Phone / Password Registration ──
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
+    // ── Allow Enter key to proceed ──
+    document.getElementById('regPhone').addEventListener('keydown', e => { if(e.key==='Enter') sendOTP(); });
+    document.getElementById('otpInput').addEventListener('keydown',  e => { if(e.key==='Enter') verifyOTP(); });
 
-        // ── Consent check ──
-        if (!document.getElementById('consentCheck').checked) {
-            showStatus('error', '⚠️ Please read and accept the Privacy Policy before continuing.');
-            document.getElementById('consentCheck').focus();
-            return;
-        }
-
-        // ── Client-side password requirements check ──
-        const pwVal = document.getElementById('regPass').value;
-        const pwOk = {
-            len:     pwVal.length >= 8,
-            upper:   /[A-Z]/.test(pwVal),
-            lower:   /[a-z]/.test(pwVal),
-            num:     /[0-9]/.test(pwVal),
-            special: /[@$!%*?&#^_\-]/.test(pwVal)
-        };
-        if (!Object.values(pwOk).every(Boolean)) {
-            showStatus('error', '🔐 Password doesn\'t meet all requirements. Please check the list below.');
-            // Highlight unmet requirements with a brief shake
-            const list = document.getElementById('pwReqList');
-            list.style.animation = 'none';
-            setTimeout(() => { list.style.animation = 'shake 0.4s ease'; }, 10);
-            document.getElementById('regPass').focus();
-            return;
-        }
-
-        let rawPhone = document.getElementById('regPhone').value.trim();
-        if (rawPhone.startsWith('0')) rawPhone = '254' + rawPhone.substring(1);
-
-        const userData = {
-            name:     document.getElementById('regName').value,
-            phone:    rawPhone,
-            password: pwVal,
-            role:     document.querySelector('input[name="regRole"]:checked').value
-        };
-
-        btn.disabled    = true;
-        btn.textContent = 'Creating account…';
-
-        try {
-            const res  = await fetch('/api/auth/register', {
-                method:      'POST',
-                credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify(userData)
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                showStatus('success', '🎉 Account created successfully! Taking you to sign in…');
-                btn.textContent = '✅ Account Created!';
-                setTimeout(() => window.location.href = 'login.html?registered=true', 2500);
-            } else {
-                showStatus('error', '❌ ' + (data.msg || 'Registration failed. Try again.'));
-                btn.disabled    = false;
-                btn.textContent = 'Create Free Account';
-            }
-        } catch {
-            showStatus('error', '⚠️ Connection failed. Make sure the server is running.');
-            btn.disabled    = false;
-            btn.textContent = 'Create Free Account';
-        }
-    });
-
-    // ── Session helper ──
-    // Token is set as an httpOnly cookie by the server — only non-sensitive
-    // display values are stored in localStorage.
-    function saveSession(data) {
-        localStorage.setItem('userName',  data.user.name);
-        localStorage.setItem('userRole',  data.user.role);
-        localStorage.setItem('userId',    data.user.id || data.user._id);
-        localStorage.setItem('userPhone', data.user.phone || '');
-    }
-
+    // ── Status helper ──
     function showStatus(type, msg) {
         const el = document.getElementById('statusMsg');
         if (!msg) { el.style.display = 'none'; return; }

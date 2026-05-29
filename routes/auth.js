@@ -9,6 +9,17 @@ const protect = require('../middleware/auth');
 const { sendSMS } = require('../services/sms');
 const AuditLog = require('../models/AuditLog');
 
+// In-memory OTP store (phone → {otp, expiresAt})
+const pendingOTPs    = new Map();
+// In-memory verified-phone store (token → {phone, expiresAt})
+const verifiedPhones = new Map();
+
+function cleanMaps() {
+    const now = Date.now();
+    for (const [k, v] of pendingOTPs)    if (v.expiresAt < now) pendingOTPs.delete(k);
+    for (const [k, v] of verifiedPhones) if (v.expiresAt < now) verifiedPhones.delete(k);
+}
+
 function audit(userId, userName, action, req) {
     const ip = (req?.header('x-forwarded-for') || req?.ip || '').split(',')[0].trim();
     AuditLog.create({ userId, userName, action, entity: 'user', entityId: String(userId), ip }).catch(() => {});
@@ -55,15 +66,78 @@ function clearAuthCookie(res) {
     });
 }
 
+// @route   POST /api/auth/send-otp — send verification OTP to phone before registration
+router.post('/send-otp', authLimiter, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ msg: 'Phone number is required.' });
+
+        const normalised = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+        if (!/^254[0-9]{9}$/.test(normalised)) {
+            return res.status(400).json({ msg: 'Enter a valid Kenyan phone number (e.g. 0712 345 678).' });
+        }
+
+        const existing = await User.findOne({ phone: normalised });
+        if (existing) return res.status(400).json({ msg: 'An account with this number already exists. Please sign in.' });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        pendingOTPs.set(normalised, { otp, expiresAt: Date.now() + 10 * 60 * 1000 });
+        cleanMaps();
+
+        await sendSMS(normalised, `Your Kazi Mtaani verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`);
+        res.json({ msg: 'OTP sent. Check your phone.' });
+    } catch (err) {
+        console.error('Send OTP error:', err.message);
+        res.status(500).json({ msg: 'Could not send OTP. Please try again.' });
+    }
+});
+
+// @route   POST /api/auth/verify-otp — verify OTP and return a short-lived phoneToken
+router.post('/verify-otp', authLimiter, async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+        if (!phone || !otp) return res.status(400).json({ msg: 'Phone and OTP are required.' });
+
+        const normalised = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+        const entry = pendingOTPs.get(normalised);
+
+        if (!entry || entry.otp !== String(otp).trim() || entry.expiresAt < Date.now()) {
+            return res.status(400).json({ msg: 'Invalid or expired code. Please request a new one.' });
+        }
+
+        pendingOTPs.delete(normalised);
+
+        const phoneToken = crypto.randomBytes(32).toString('hex');
+        verifiedPhones.set(phoneToken, { phone: normalised, expiresAt: Date.now() + 15 * 60 * 1000 });
+        cleanMaps();
+
+        res.json({ msg: 'Phone verified.', phoneToken });
+    } catch (err) {
+        console.error('Verify OTP error:', err.message);
+        res.status(500).json({ msg: 'Verification failed. Please try again.' });
+    }
+});
+
 // @route   POST /api/auth/register
 router.post('/register', authLimiter, async (req, res) => {
     try {
-        const { name, phone, password } = req.body;
+        const { name, phone, password, phoneToken } = req.body;
 
         // Validate required fields
         if (!name || !phone || !password) {
             return res.status(400).json({ msg: 'Name, phone, and password are required.' });
         }
+
+        // Verify phone ownership token
+        if (!phoneToken) {
+            return res.status(400).json({ msg: 'Phone verification required. Please verify your number first.' });
+        }
+        const normalised = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+        const verified = verifiedPhones.get(phoneToken);
+        if (!verified || verified.phone !== normalised || verified.expiresAt < Date.now()) {
+            return res.status(400).json({ msg: 'Phone verification expired. Please verify your number again.' });
+        }
+        verifiedPhones.delete(phoneToken);
 
         // Enforce strong password (same rules as the frontend)
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_\-])[A-Za-z\d@$!%*?&#^_\-]{8,}$/;
@@ -72,7 +146,7 @@ router.post('/register', authLimiter, async (req, res) => {
         }
 
         // Check if user exists
-        let user = await User.findOne({ phone });
+        let user = await User.findOne({ phone: normalised });
         if (user) {
             return res.status(400).json({ msg: 'User already exists with this phone number.' });
         }
@@ -83,7 +157,7 @@ router.post('/register', authLimiter, async (req, res) => {
         if (req.body.role === 'employer') safeRole = 'employer';
         // 'admin' can NEVER be self-assigned — must be set in the database directly
 
-        user = new User({ name: sanitizeText(name, 60), phone, password, role: safeRole });
+        user = new User({ name: sanitizeText(name, 60), phone: normalised, password, role: safeRole });
         await user.save();
 
         // Generate JWT so user is logged in immediately after registration
