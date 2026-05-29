@@ -87,7 +87,7 @@ router.post('/send-otp', authLimiter, async (req, res) => {
         await sendSMS(normalised, `Your Kazi Mtaani verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`);
         res.json({ msg: 'OTP sent. Check your phone.' });
     } catch (err) {
-        console.error('Send OTP error:', err.message);
+        console.error('Send OTP error:', err.message, err.response?.data || err.response?.status || '');
         res.status(500).json({ msg: 'Could not send OTP. Please try again.' });
     }
 });

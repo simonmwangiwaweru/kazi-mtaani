@@ -53,7 +53,8 @@ async function sendSMS(to, message) {
     }
 
     const result = await sms.send(opts);
-    console.log('SMS dispatched:', JSON.stringify(result.SMSMessageData?.Recipients?.[0] ?? result));
+    const recipient = result.SMSMessageData?.Recipients?.[0] ?? result;
+    console.log('SMS dispatched:', JSON.stringify(recipient));
     return result;
 }
 
