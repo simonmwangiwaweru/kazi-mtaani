@@ -2191,7 +2191,7 @@
             const applied   = jobs.filter(j => j.applicants && j.applicants.includes(currentUserName)).length;
             const hired     = jobs.filter(j => j.hiredWorker === currentUserName).length;
             const completed = jobs.filter(j => j.hiredWorker === currentUserName && j.status === 'Completed').length;
-            const earned    = jobs.filter(j => j.hiredWorker === currentUserName && j.paymentStatus === 'Released').reduce((s,j)=>s+Number(j.pay||0),0);
+            const earned    = jobs.filter(j => j.hiredWorker === currentUserName && j.paymentStatus === 'Released').reduce((s,j)=>s+Number(j.workerPayout||Math.round((j.pay||0)*0.95)),0);
             statsHtml = `
                 <div class="pv-stat"><div class="pv-stat-val">${applied}</div><div class="pv-stat-lbl">Jobs Applied</div></div>
                 <div class="pv-stat"><div class="pv-stat-val">${hired}</div><div class="pv-stat-lbl">Times Hired</div></div>
@@ -2407,7 +2407,7 @@
 
         if (role === 'worker') {
             const earned   = jobs.filter(j => j.paymentStatus === 'Released')
-                                 .reduce((s,j) => s + Number(j.pay||0), 0);
+                                 .reduce((s,j) => s + Number(j.workerPayout || Math.round((j.pay||0) * 0.95)), 0);
             const inEscrow = jobs.filter(j => j.paymentStatus === 'In-Escrow')
                                  .reduce((s,j) => s + Number(j.pay||0), 0);
             const pending  = jobs.filter(j => j.paymentStatus === 'Pending' && j.hiredWorker === currentUserName)
@@ -2634,16 +2634,18 @@
                 document.getElementById('statJobsLbl').textContent = 'Open Jobs';
                 document.getElementById('statAppsLbl').textContent = 'My Applications';
                 document.getElementById('statDoneLbl').textContent = 'My Completed';
-                document.getElementById('statEarnedLbl').textContent = 'My Locked KES';
+                document.getElementById('statEarnedLbl').textContent = 'Total Earned (KES)';
 
                 // Only update per-user stats on page 1 (needs all jobs data for accuracy)
                 if (_jobsPage === 1) {
                     const myAppliedJobs = jobs.filter(j => j.applicants && j.applicants.includes(currentUserName));
                     const myHiredJobs   = jobs.filter(j => j.hiredWorker === currentUserName);
-                    document.getElementById('statApps').textContent   = myAppliedJobs.length;
-                    document.getElementById('statDone').textContent   = myHiredJobs.filter(j => j.status === 'Completed').length;
-                    const wk_escrow = myHiredJobs.filter(j => j.paymentStatus === 'In-Escrow').reduce((s,j) => s + Number(j.pay||0), 0);
-                    document.getElementById('statEarned').textContent = wk_escrow > 0 ? wk_escrow.toLocaleString() : '0';
+                    document.getElementById('statApps').textContent = myAppliedJobs.length;
+                    document.getElementById('statDone').textContent = myHiredJobs.filter(j => j.status === 'Completed').length;
+                    const wk_earned = myHiredJobs
+                        .filter(j => j.paymentStatus === 'Released')
+                        .reduce((s,j) => s + Number(j.workerPayout || Math.round((j.pay||0) * 0.95)), 0);
+                    document.getElementById('statEarned').textContent = wk_earned.toLocaleString();
                 }
                 // Total open jobs from API (accurate regardless of page)
                 document.getElementById('statJobs').textContent = total;
