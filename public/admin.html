@@ -284,6 +284,10 @@
                         <div class="stat-icon" style="background:#fff8e1;">🔒</div>
                         <div><div class="stat-val" id="statEscrow">—</div><div class="stat-lbl">In Escrow (KES)</div></div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:#f0fdf4;">💵</div>
+                        <div><div class="stat-val" id="statEarnings">—</div><div class="stat-lbl">Platform Earnings (KES)</div></div>
+                    </div>
                 </div>
 
                 <!-- Quick links -->
@@ -531,11 +535,13 @@
         try {
             const res  = await apiFetch('/api/admin/stats', { headers: authHeaders() });
             const data = await res.json();
-            document.getElementById('statUsers').textContent  = data.totalUsers  ?? '—';
-            document.getElementById('statJobs').textContent   = data.totalJobs   ?? '—';
-            document.getElementById('statActive').textContent = data.activeJobs  ?? '—';
-            document.getElementById('statEscrow').textContent =
-                data.escrowTotal != null ? Number(data.escrowTotal).toLocaleString() : '—';
+            document.getElementById('statUsers').textContent    = data.totalUsers    ?? '—';
+            document.getElementById('statJobs').textContent     = data.totalJobs     ?? '—';
+            document.getElementById('statActive').textContent   = data.activeJobs    ?? '—';
+            document.getElementById('statEscrow').textContent   =
+                data.escrowTotal   != null ? Number(data.escrowTotal).toLocaleString()   : '—';
+            document.getElementById('statEarnings').textContent =
+                data.totalEarnings != null ? Number(data.totalEarnings).toLocaleString() : '—';
             document.getElementById('lastRefresh').textContent =
                 'Updated ' + new Date().toLocaleTimeString('en-KE');
         } catch { /* silent */ }

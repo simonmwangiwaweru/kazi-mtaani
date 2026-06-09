@@ -18,14 +18,20 @@ cloudinary.config({
 // GET /api/admin/stats
 router.get('/stats', adminGuard, async (req, res) => {
     try {
-        const [totalUsers, totalJobs, activeJobs, escrowJobs] = await Promise.all([
+        const [totalUsers, totalJobs, activeJobs, escrowJobs, releasedJobs] = await Promise.all([
             User.countDocuments(),
             Job.countDocuments(),
             Job.countDocuments({ status: { $ne: 'Completed' } }),
-            Job.find({ paymentStatus: 'In-Escrow' }).select('pay')
+            Job.find({ paymentStatus: 'In-Escrow' }).select('pay'),
+            Job.find({ paymentStatus: 'Released' }).select('platformFee pay')
         ]);
-        const escrowTotal = escrowJobs.reduce((s, j) => s + Number(j.pay || 0), 0);
-        res.json({ totalUsers, totalJobs, activeJobs, escrowTotal });
+        const escrowTotal    = escrowJobs.reduce((s, j) => s + Number(j.pay || 0), 0);
+        // Sum platformFee on released jobs; fall back to 10% of pay for older jobs without the field
+        const totalEarnings  = releasedJobs.reduce((s, j) => {
+            const fee = j.platformFee > 0 ? j.platformFee : Math.round(Number(j.pay || 0) * 0.10);
+            return s + fee;
+        }, 0);
+        res.json({ totalUsers, totalJobs, activeJobs, escrowTotal, totalEarnings });
     } catch (err) {
         res.status(500).json({ msg: 'Server error.' });
     }
