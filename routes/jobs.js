@@ -102,11 +102,19 @@ router.post('/', protect, async (req, res) => {
             .filter(Boolean)
             .slice(0, 10);
 
+        // Platform commission: 5% from employer, 5% from worker (10% total)
+        const platformFee   = Math.round(payAmount * 0.10);
+        const employerTotal = Math.round(payAmount * 1.05);
+        const workerPayout  = Math.round(payAmount * 0.95);
+
         const newJob = new Job({
             title:          sanitizeText(title, 120),
             description:    sanitizeText(description, 2000),
             location:       sanitizeText(location, 120),
             pay:            payAmount,
+            platformFee,
+            employerTotal,
+            workerPayout,
             category:       safeCategory,
             employer:       req.user.id,
             employerPhone:  sanitizeText(employerPhone, 20),
@@ -165,7 +173,16 @@ router.post('/', protect, async (req, res) => {
             });
         }
 
-        res.status(201).json(savedJob);
+        res.status(201).json({
+            ...savedJob.toObject(),
+            feeBreakdown: {
+                jobPay:       payAmount,
+                youPay:       employerTotal,
+                workerGets:   workerPayout,
+                platformFee,
+                note: `A 10% platform fee applies — you pay 5% (KES ${Math.round(payAmount * 0.05)}) and the worker pays 5% (KES ${Math.round(payAmount * 0.05)}).`
+            }
+        });
     } catch (err) {
         res.status(400).json({ msg: 'Failed to create job.' });
     }
@@ -206,12 +223,15 @@ router.put('/:id/edit', protect, async (req, res) => {
         if (!Array.isArray(requiredSkills)) requiredSkills = [];
         const safeSkills = requiredSkills.map(s => sanitizeText(s, 60)).filter(Boolean).slice(0, 10);
 
-        job.title       = sanitizeText(title, 120);
-        job.description = sanitizeText(description, 2000);
-        job.location    = sanitizeText(location, 120);
-        job.pay         = payAmount;
-        job.category    = VALID_CATEGORIES.includes(category) ? category : 'casual';
-        job.duration    = sanitizeText(duration || '', 60);
+        job.title          = sanitizeText(title, 120);
+        job.description    = sanitizeText(description, 2000);
+        job.location       = sanitizeText(location, 120);
+        job.pay            = payAmount;
+        job.platformFee    = Math.round(payAmount * 0.10);
+        job.employerTotal  = Math.round(payAmount * 1.05);
+        job.workerPayout   = Math.round(payAmount * 0.95);
+        job.category       = VALID_CATEGORIES.includes(category) ? category : 'casual';
+        job.duration       = sanitizeText(duration || '', 60);
         job.requiredSkills = safeSkills;
         await job.save();
 

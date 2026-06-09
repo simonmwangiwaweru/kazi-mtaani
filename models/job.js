@@ -33,11 +33,16 @@ const JobSchema = new mongoose.Schema({
     mpesaReceiptNumber: { type: String },
     employer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
+    // PLATFORM COMMISSION (10% total — 5% from employer, 5% from worker)
+    platformFee:   { type: Number, default: 0 },  // Total fee kept by platform
+    employerTotal: { type: Number, default: 0 },  // What employer pays (pay + 5%)
+    workerPayout:  { type: Number, default: 0 },  // What worker receives (pay - 5%)
+
     // ESCROW FIELDS
     employerPhone:     { type: String, default: '' },   // Phone that paid into escrow (for refunds)
     workerPhone:       { type: String, default: '' },   // Phone that received payout
-    checkoutRequestId: { type: String, default: '' },   // IntaSend invoice_id (STK Push)
-    payoutTrackingId:  { type: String, default: '' },   // IntaSend tracking_id (payout/refund)
+    checkoutRequestId: { type: String, default: '' },   // STK Push invoice ID
+    payoutTrackingId:  { type: String, default: '' },   // Payout tracking ID
 
     createdAt: { type: Date, default: Date.now }
 });
