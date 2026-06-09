@@ -211,6 +211,29 @@
                             <input type="tel" id="employerPhone" class="glass-input" placeholder="e.g. 0712 345 678" required>
                         </div>
                     </div>
+
+                    <!-- Live fee breakdown — shown once employer types a pay amount -->
+                    <div id="feeBreakdown" style="display:none; margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px 16px;">
+                        <p style="margin:0 0 8px 0; font-weight:600; color:#15803d; font-size:0.9rem;">📊 Fee Breakdown (10% platform fee)</p>
+                        <div style="display:flex; flex-direction:column; gap:5px; font-size:0.875rem; color:#374151;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span>Job pay (agreed amount)</span>
+                                <span id="feeJobPay" style="font-weight:500;">KES 0</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; color:#dc2626;">
+                                <span>Your platform fee (5%)</span>
+                                <span id="feeEmployerFee" style="font-weight:500;">+ KES 0</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; border-top:1px solid #bbf7d0; padding-top:6px; font-weight:700; color:#15803d;">
+                                <span>You will pay into escrow</span>
+                                <span id="feeEmployerTotal">KES 0</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; color:#6b7280; margin-top:2px;">
+                                <span>Worker receives</span>
+                                <span id="feeWorkerPayout">KES 0</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="btn-primary submit-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;">
@@ -353,6 +376,20 @@
             addSkill(skillInp.value);
             skillInp.value = '';
         }
+    });
+    // ── Live fee breakdown ────────────────────────────────────────────────────
+    document.getElementById('pay').addEventListener('input', function () {
+        const pay = parseFloat(this.value);
+        const breakdown = document.getElementById('feeBreakdown');
+        if (!pay || pay < 1) { breakdown.style.display = 'none'; return; }
+        const employerFee   = Math.round(pay * 0.05);
+        const employerTotal = Math.round(pay * 1.05);
+        const workerPayout  = Math.round(pay * 0.95);
+        document.getElementById('feeJobPay').textContent      = 'KES ' + pay.toLocaleString();
+        document.getElementById('feeEmployerFee').textContent = '+ KES ' + employerFee.toLocaleString();
+        document.getElementById('feeEmployerTotal').textContent = 'KES ' + employerTotal.toLocaleString();
+        document.getElementById('feeWorkerPayout').textContent  = 'KES ' + workerPayout.toLocaleString();
+        breakdown.style.display = 'block';
     });
     // ─────────────────────────────────────────────────────────────────────────
 
